@@ -24,20 +24,20 @@ class AIError(Exception):
     """AI bilan bog'liq xatolar."""
 
 
-def _gemini_model(vision: bool = False):
+def _gemini_model(system: str = SYSTEM_PROMPT):
     import google.generativeai as genai
 
     genai.configure(api_key=config.GEMINI_API_KEY)
     return genai.GenerativeModel(
         model_name=config.GEMINI_MODEL,
-        system_instruction=SYSTEM_PROMPT,
+        system_instruction=system,
     )
 
 
-def _ask_gemini(text: str) -> str:
+def _ask_gemini(text: str, system: str = SYSTEM_PROMPT) -> str:
     if not config.GEMINI_API_KEY:
         raise AIError("GEMINI_API_KEY topilmadi. .env faylga kalitni qo'shing.")
-    model = _gemini_model()
+    model = _gemini_model(system)
     resp = model.generate_content(text)
     return (resp.text or "").strip() or "Kechirasiz, javob bo'sh chiqdi."
 
@@ -45,7 +45,7 @@ def _ask_gemini(text: str) -> str:
 def _ask_gemini_image(image_bytes: bytes, mime_type: str, text: str) -> str:
     if not config.GEMINI_API_KEY:
         raise AIError("GEMINI_API_KEY topilmadi. .env faylga kalitni qo'shing.")
-    model = _gemini_model(vision=True)
+    model = _gemini_model(SYSTEM_PROMPT)
     prompt = text or (
         "Rasmdagi masala yoki savolni aniqla va to'liq, bosqichma-bosqich yechib ber."
     )
@@ -58,7 +58,7 @@ def _ask_gemini_image(image_bytes: bytes, mime_type: str, text: str) -> str:
     return (resp.text or "").strip() or "Kechirasiz, javob bo'sh chiqdi."
 
 
-def _ask_groq(text: str) -> str:
+def _ask_groq(text: str, system: str = SYSTEM_PROMPT) -> str:
     if not config.GROQ_API_KEY:
         raise AIError("GROQ_API_KEY topilmadi. .env faylga kalitni qo'shing.")
     from groq import Groq
@@ -67,7 +67,7 @@ def _ask_groq(text: str) -> str:
     completion = client.chat.completions.create(
         model=config.GROQ_MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system},
             {"role": "user", "content": text},
         ],
         temperature=0.6,
@@ -87,6 +87,22 @@ def ask(text: str) -> str:
     if provider == "groq":
         return _ask_groq(text)
     return _ask_gemini(text)
+
+
+def ask_with_system(text: str, system: str) -> str:
+    """Maxsus tizim ko'rsatmasi (system prompt) bilan savol beradi.
+
+    Masalan prezentatsiya tuzilishini JSON ko'rinishida olish uchun ishlatiladi.
+    """
+    provider = config.active_provider()
+    if not provider:
+        raise AIError(
+            "Hech qanday AI kaliti sozlanmagan. .env faylga GEMINI_API_KEY yoki "
+            "GROQ_API_KEY qo'shing."
+        )
+    if provider == "groq":
+        return _ask_groq(text, system)
+    return _ask_gemini(text, system)
 
 
 def ask_with_image(image_bytes: bytes, mime_type: str = "image/jpeg",

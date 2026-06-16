@@ -17,6 +17,7 @@ from telegram.ext import (
 )
 
 from bilim_ai import ai, config
+from bilim_ai import presentation as pptx_gen
 from bilim_ai.prompt import WELCOME_MESSAGE
 
 logging.basicConfig(
@@ -57,8 +58,38 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "Savolingizni shunchaki yozing. Masala rasmini yuborsangiz ham yechib beraman.\n\n"
         "Buyruqlar:\n"
         "/start - boshlash\n"
-        "/help - yordam"
+        "/help - yordam\n"
+        "/prezentatsiya <mavzu> - PowerPoint prezentatsiya yaratish\n\n"
+        "Masalan: /prezentatsiya Suvning tabiatdagi aylanishi"
     )
+
+
+async def presentation_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    topic = " ".join(context.args).strip()
+    if not topic:
+        await update.message.reply_text(
+            "Mavzuni yozing. Masalan:\n/prezentatsiya Quyosh sistemasi"
+        )
+        return
+    await context.bot.send_chat_action(
+        chat_id=update.effective_chat.id, action=constants.ChatAction.UPLOAD_DOCUMENT
+    )
+    await update.message.reply_text(f"📊 \"{topic}\" mavzusida prezentatsiya tayyorlanmoqda…")
+    try:
+        data, title = await _run(pptx_gen.create_presentation, topic, 8)
+        import io
+
+        bio = io.BytesIO(data)
+        safe = "".join(c for c in title if c.isalnum() or c in " -_").strip() or "prezentatsiya"
+        bio.name = f"{safe}.pptx"
+        await update.message.reply_document(
+            document=bio,
+            filename=bio.name,
+            caption=f"✅ \"{title}\" tayyor! PowerPoint yoki Google Slides'da oching.",
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Prezentatsiya xatosi")
+        await update.message.reply_text(f"⚠️ Prezentatsiya yaratishda xatolik: {exc}")
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -118,6 +149,8 @@ def main() -> None:
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("prezentatsiya", presentation_command))
+    app.add_handler(CommandHandler("presentation", presentation_command))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 

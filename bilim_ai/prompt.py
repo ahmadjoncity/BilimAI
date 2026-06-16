@@ -83,6 +83,7 @@ WELCOME_MESSAGE = (
     "🧬 Biologiya, Tarix, Geografiya\n"
     "🇬🇧 Ingliz tili (tarjima, grammatika, insho)\n"
     "💻 Dasturlash (Python, JavaScript va h.k.)\n"
-    "📷 Rasmdagi masalalarni yechish\n\n"
+    "📷 Rasmdagi masalalarni yechish\n"
+    "📊 Prezentatsiya yaratish (/prezentatsiya mavzu)\n\n"
     "Savolingizni yozing yoki masala rasmini yuboring!"
 )

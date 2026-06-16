@@ -9,6 +9,13 @@ Loyiha **ikki ko'rinishda** ishlaydi:
 - 🤖 **Telegram bot** (`bot.py`)
 - 🌐 **Web ilova** (`web.py`) — brauzerda sinab ko'rish uchun
 
+## ✨ Imkoniyatlar
+- 📚 Fan savollariga bosqichma-bosqich javob (matematika, fizika, kimyo va h.k.)
+- 📷 Rasmdagi masalalarni yechish (Gemini bilan)
+- 📊 **Prezentatsiya yaratish** — mavzu bo'yicha tayyor `.pptx` fayl
+  - Web: 📊 tugmasi
+  - Telegram: `/prezentatsiya <mavzu>`
+
 ---
 
 ## 📁 Loyiha tuzilishi

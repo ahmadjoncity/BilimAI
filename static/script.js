@@ -45,6 +45,48 @@ input.addEventListener("keydown", (e) => {
     }
 });
 
+// --- Prezentatsiya yaratish ---
+const pptxBtn = document.getElementById("pptx-btn");
+pptxBtn.addEventListener("click", async () => {
+    const topic = (input.value.trim()) || prompt("Prezentatsiya mavzusini kiriting:");
+    if (!topic) return;
+
+    addMessage("user", `<p>📊 Prezentatsiya: <b>${escapeHtml(topic)}</b></p>`);
+    input.value = "";
+    input.style.height = "auto";
+    const typing = addTyping();
+    pptxBtn.disabled = true;
+
+    try {
+        const fd = new FormData();
+        fd.append("topic", topic);
+        fd.append("slides", "8");
+        const res = await fetch("/api/presentation", { method: "POST", body: fd });
+        typing.remove();
+        if (!res.ok) {
+            const data = await res.json();
+            addMessage("bot", `<p>⚠️ ${escapeHtml(data.error || "Xatolik")}</p>`);
+            return;
+        }
+        // .pptx faylni yuklab olish
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = topic.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_") + ".pptx";
+        a.click();
+        URL.revokeObjectURL(url);
+        addMessage("bot",
+            `<p>✅ <b>"${escapeHtml(topic)}"</b> mavzusida prezentatsiya tayyor!</p>
+             <p>Fayl yuklab olindi (.pptx). PowerPoint, Google Slides yoki Canva'da ochishingiz mumkin. 📥</p>`);
+    } catch (err) {
+        typing.remove();
+        addMessage("bot", `<p>⚠️ Xatolik: ${escapeHtml(err.message)}</p>`);
+    } finally {
+        pptxBtn.disabled = false;
+    }
+});
+
 // --- Rasm tanlash ---
 fileInput.addEventListener("change", () => {
     const file = fileInput.files[0];

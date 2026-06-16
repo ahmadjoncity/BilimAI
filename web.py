@@ -8,12 +8,14 @@ Keyin brauzerda oching: http://localhost:8000
 """
 
 import logging
+import re
 
 from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from bilim_ai import ai, config
+from bilim_ai import presentation as pptx_gen
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BilimAI.web")
@@ -67,6 +69,34 @@ async def chat_image(
         return {"answer": answer, "provider": "gemini"}
     except Exception as exc:  # noqa: BLE001
         logger.exception("Rasm chat xatosi")
+        return JSONResponse(status_code=500, content={"error": str(exc)})
+
+
+@app.post("/api/presentation")
+async def presentation(topic: str = Form(...), slides: int = Form(8)):
+    """Mavzu bo'yicha .pptx prezentatsiya yaratib, yuklab beradi."""
+    import asyncio
+    import urllib.parse
+
+    if not config.is_configured():
+        return JSONResponse(
+            status_code=503,
+            content={"error": "AI kaliti sozlanmagan. GEMINI_API_KEY yoki GROQ_API_KEY qo'shing."},
+        )
+    try:
+        slides = max(3, min(int(slides), 15))
+        data, title = await asyncio.to_thread(pptx_gen.create_presentation, topic, slides)
+        # Fayl nomi (xavfsiz)
+        safe = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "_") or "prezentatsiya"
+        filename = f"{safe}.pptx"
+        quoted = urllib.parse.quote(filename)
+        return Response(
+            content=data,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quoted}"},
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Prezentatsiya xatosi")
         return JSONResponse(status_code=500, content={"error": str(exc)})
 
 
