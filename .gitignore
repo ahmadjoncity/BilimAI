@@ -1,0 +1,23 @@
+# Muhit kalitlari - HECH QACHON yuklanmasin!
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.Python
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# Vaqtinchalik fayllar
+tmp/
+*.tmp

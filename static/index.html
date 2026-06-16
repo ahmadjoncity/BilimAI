@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BilimAI — O'quv yordamchisi</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🎓</span>
+                <div>
+                    <h1>BilimAI</h1>
+                    <p class="subtitle">Sizning shaxsiy o'quv yordamchingiz</p>
+                </div>
+            </div>
+            <span id="status" class="status status--checking">Tekshirilmoqda…</span>
+        </header>
+
+        <main id="chat" class="chat">
+            <div class="message message--bot">
+                <div class="avatar">🎓</div>
+                <div class="bubble">
+                    <p>Assalomu alaykum! Men <b>BilimAI</b>man. 📚</p>
+                    <p>Matematika, fizika, kimyo, biologiya, tarix, ingliz tili yoki dasturlash —
+                    istalgan savolingizni yozing yoki masala <b>rasmini</b> yuboring!</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="composer">
+            <div id="preview" class="preview hidden">
+                <img id="preview-img" alt="rasm">
+                <button id="preview-remove" title="O'chirish">&times;</button>
+            </div>
+            <form id="form" class="composer-row">
+                <label class="attach" title="Rasm biriktirish">
+                    📷
+                    <input type="file" id="file" accept="image/*" hidden>
+                </label>
+                <textarea id="input" rows="1" placeholder="Savolingizni yozing…"></textarea>
+                <button type="submit" id="send" class="send" title="Yuborish">➤</button>
+            </form>
+            <p class="hint">BilimAI xato qilishi mumkin — muhim ma'lumotlarni tekshiring.</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
