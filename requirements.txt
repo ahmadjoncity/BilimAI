@@ -13,6 +13,9 @@ python-telegram-bot==21.9
 google-generativeai==0.8.3
 groq==0.13.1
 
+# Prezentatsiya (.pptx) yaratish
+python-pptx==1.0.2
+
 # Utils
 python-dotenv==1.0.1
 httpx==0.28.1

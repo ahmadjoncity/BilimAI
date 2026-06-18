@@ -5,6 +5,37 @@ Matematika, fizika, kimyo, biologiya, tarix, geografiya, ingliz tili va dasturla
 bo'yicha savollarga bosqichma-bosqich, o'rgatuvchi javoblar beradi. Rasmdagi
 masalalarni ham yechib beradi.
 
+## ✨ Imkoniyatlar
+
+| Funksiya | Buyruq | Holat |
+|----------|--------|-------|
+| 💬 Savol-javob (8+ fan) | matn yozish | 🆓 Bepul |
+| 📷 Rasmdagi masalani yechish | rasm yuborish | 🆓 Bepul |
+| 🎨 Rasm yaratish (AI rasm chizadi) | `/rasm tavsif` | 💎 Pullik obuna |
+| 📊 Prezentatsiya (.pptx) tayyorlash | `/prezentatsiya mavzu` | 💎 Pullik obuna |
+
+> 💎 **Pullik obuna** uchun admin bilan bog'laning: **[@ravshanovichch](https://t.me/ravshanovichch)**
+> Rasm yaratish butunlay **bepul** API (Pollinations.ai) orqali ishlaydi — qo'shimcha kalit shart emas.
+
+### 🤖 Bot buyruqlari
+
+- `/start` — boshlash
+- `/help` — yordam va buyruqlar ro'yxati
+- `/id` — Telegram ID raqamingiz (obuna uchun kerak)
+- `/obuna` — pullik obuna haqida ma'lumot
+- `/rasm <tavsif>` — rasm yaratish *(premium)*
+- `/prezentatsiya <mavzu>` — taqdimot tayyorlash *(premium)*
+
+### 👑 Admin buyruqlari (faqat egasi uchun)
+
+- `/addpremium <user_id> [kun] [username]` — foydalanuvchiga premium berish (kun=0 → muddatsiz)
+- `/delpremium <user_id>` — premiumdan o'chirish
+- `/users` — barcha premium foydalanuvchilar ro'yxati
+
+> Admin `.env` dagi `ADMIN_USERNAME` (sukut bo'yicha `ravshanovichch`) yoki
+> `ADMIN_ID` orqali aniqlanadi va barcha funksiyalardan **bepul** foydalanadi.
+
+
 Loyiha **ikki ko'rinishda** ishlaydi:
 - 🤖 **Telegram bot** (`bot.py`)
 - 🌐 **Web ilova** (`web.py`) — brauzerda sinab ko'rish uchun
@@ -16,9 +47,12 @@ Loyiha **ikki ko'rinishda** ishlaydi:
 ```
 BilimAI/
 ├── bilim_ai/            # Asosiy "miya"
-│   ├── prompt.py        # BilimAI system prompt (xulq-atvor qoidalari)
-│   ├── config.py        # Muhit o'zgaruvchilarini o'qiydi
-│   └── ai.py            # AI provayder (Gemini / Groq)
+│   ├── prompt.py        # BilimAI system prompt + prezentatsiya prompti
+│   ├── config.py        # Muhit o'zgaruvchilarini o'qiydi (admin sozlamalari ham)
+│   ├── ai.py            # AI provayder (Gemini / Groq)
+│   ├── subscription.py  # Pullik obuna (premium) tizimi
+│   ├── image_gen.py     # 🎨 Rasm yaratish (Pollinations.ai - bepul)
+│   └── presentation.py  # 📊 Prezentatsiya (.pptx) yaratish
 ├── static/              # Web interfeys (HTML + CSS + JS)
 │   ├── index.html
 │   ├── style.css

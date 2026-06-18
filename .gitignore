@@ -21,3 +21,7 @@ env/
 # Vaqtinchalik fayllar
 tmp/
 *.tmp
+
+# Foydalanuvchi obuna ma'lumotlari va yaratilgan fayllar
+premium_users.json
+bilimai_*.pptx

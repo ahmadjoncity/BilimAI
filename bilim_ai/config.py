@@ -26,6 +26,15 @@ GROQ_MODEL = _get("GROQ_MODEL", "llama-3.3-70b-versatile")
 # Telegram
 TELEGRAM_BOT_TOKEN = _get("TELEGRAM_BOT_TOKEN")
 
+# --- Admin / Obuna sozlamalari ---
+# Admin username (@ siz). Bu odam barcha funksiyalardan bepul foydalanadi
+# va premium foydalanuvchilarni qo'sha oladi.
+ADMIN_USERNAME = _get("ADMIN_USERNAME", "ravshanovichch").lstrip("@").lower()
+# Admin Telegram ID (ixtiyoriy, raqamli). Bilsangiz qo'ying - ishonchliroq bo'ladi.
+ADMIN_ID = _get("ADMIN_ID")
+# Premium foydalanuvchilar saqlanadigan fayl
+PREMIUM_FILE = _get("PREMIUM_FILE", "premium_users.json")
+
 # Web server porti
 PORT = int(_get("PORT", "8000") or "8000")
 
