@@ -38,6 +38,11 @@ async def lifespan(app: FastAPI):
             await _tg_app.bot.set_webhook(
                 url=hook, allowed_updates=Update.ALL_TYPES
             )
+            # "Menu" tugmasi buyruqlarini o'rnatish (webhook rejimida post_init ishlamaydi)
+            try:
+                await _tg_app.bot.set_my_commands(bot_module.COMMANDS)
+            except Exception:  # noqa: BLE001
+                logger.exception("Buyruqlar menyusini o'rnatishda xato")
             logger.info("Telegram webhook o'rnatildi: %s", config.WEBHOOK_URL)
         except Exception:  # noqa: BLE001
             logger.exception("Webhook o'rnatishda xato")
