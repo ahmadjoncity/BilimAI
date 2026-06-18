@@ -16,7 +16,9 @@ services:
         sync: false
       - key: ADMIN_USERNAME
         value: ravshanovichch
-      # Birinchi deploydan keyin Render bergan URL'ni shu yerga qo'ying,
+      # WEBHOOK_URL ni qo'lda kiritish SHART EMAS — Render avtomatik
+      # RENDER_EXTERNAL_URL beradi va bot o'zi ishlatadi.
+      # Agar baribir qo'lda berishni xohlasangiz, oxirida / belgisiz yozing:
       # masalan: https://bilimai.onrender.com
       - key: WEBHOOK_URL
         sync: false

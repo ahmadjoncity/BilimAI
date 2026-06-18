@@ -37,8 +37,15 @@ PREMIUM_FILE = _get("PREMIUM_FILE", "premium_users.json")
 
 # --- Webhook (Render/Koyeb kabi bepul hostinglar uchun) ---
 # Ilovangizning ochiq URL manzili. Masalan: https://bilimai.onrender.com
-# Agar bo'sh bo'lsa, web server faqat web interfeys sifatida ishlaydi (bot webhooksiz).
-WEBHOOK_URL = _get("WEBHOOK_URL", "").rstrip("/")
+# Render bu manzilni avtomatik RENDER_EXTERNAL_URL ga yozadi, shuning uchun
+# WEBHOOK_URL ni qo'lda kiritish SHART EMAS — o'zi topadi.
+WEBHOOK_URL = (_get("WEBHOOK_URL") or _get("RENDER_EXTERNAL_URL")).rstrip("/")
+
+# Webhook xavfsizlik kaliti (Telegram so'rovini tekshirish uchun, header orqali).
+# Agar berilmasa, bot tokeni asosida avtomatik hosil qilinadi.
+WEBHOOK_SECRET = _get("WEBHOOK_SECRET") or "".join(
+    c for c in TELEGRAM_BOT_TOKEN if c.isalnum()
+)[:128]
 
 # Web server porti
 PORT = int(_get("PORT", "8000") or "8000")

@@ -34,17 +34,24 @@ async def lifespan(app: FastAPI):
             _tg_app = bot_module.build_application()
             await _tg_app.initialize()
             await _tg_app.start()
-            hook = f"{config.WEBHOOK_URL}/telegram/{config.TELEGRAM_BOT_TOKEN}"
+            hook = f"{config.WEBHOOK_URL}/webhook"
             await _tg_app.bot.set_webhook(
-                url=hook, allowed_updates=Update.ALL_TYPES
+                url=hook,
+                allowed_updates=Update.ALL_TYPES,
+                secret_token=config.WEBHOOK_SECRET,
+                drop_pending_updates=True,
             )
-            logger.info("Telegram webhook o'rnatildi: %s", config.WEBHOOK_URL)
+            info = await _tg_app.bot.get_webhook_info()
+            logger.info("Telegram webhook o'rnatildi: %s", hook)
+            logger.info("Webhook holati: url=%s, pending=%s, last_error=%s",
+                        info.url, info.pending_update_count, info.last_error_message)
         except Exception:  # noqa: BLE001
             logger.exception("Webhook o'rnatishda xato")
             _tg_app = None
     else:
-        logger.info(
-            "WEBHOOK_URL yo'q — bot webhook rejimida ishlamaydi (faqat web interfeys)."
+        logger.warning(
+            "WEBHOOK_URL yoki TELEGRAM_BOT_TOKEN yo'q — bot webhook rejimida "
+            "ishlamaydi (faqat web interfeys). Render'da kalitlarni tekshiring."
         )
     yield
     # Shutdown
@@ -64,9 +71,27 @@ app = FastAPI(
 )
 
 
-@app.post("/telegram/{token}")
-async def telegram_webhook(token: str, request: Request):
+@app.post("/webhook")
+async def telegram_webhook(request: Request):
     """Telegram'dan kelgan yangilanishlarni qabul qiladi (webhook)."""
+    if _tg_app is None:
+        return JSONResponse(status_code=503, content={"error": "bot not ready"})
+    # Telegram so'rovini header orqali tekshirish (xavfsizlik)
+    secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if config.WEBHOOK_SECRET and secret != config.WEBHOOK_SECRET:
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    try:
+        data = await request.json()
+        update = Update.de_json(data, _tg_app.bot)
+        await _tg_app.process_update(update)
+    except Exception:  # noqa: BLE001
+        logger.exception("Webhook update xatosi")
+    return {"ok": True}
+
+
+@app.post("/telegram/{token}")
+async def telegram_webhook_legacy(token: str, request: Request):
+    """Eski webhook manzili (orqaga moslik uchun)."""
     if _tg_app is None or token != config.TELEGRAM_BOT_TOKEN:
         return JSONResponse(status_code=403, content={"error": "forbidden"})
     try:
