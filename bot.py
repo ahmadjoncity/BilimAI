@@ -25,6 +25,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from telegram import BotCommand, ReplyKeyboardMarkup, KeyboardButton
 
 from bilim_ai import ai, config, image_gen, presentation, subscription
 from bilim_ai.prompt import WELCOME_MESSAGE
@@ -39,6 +40,41 @@ logger = logging.getLogger("BilimAI.bot")
 TG_LIMIT = 4096
 
 ADMIN_CONTACT = "@ravshanovichch"
+
+
+# ----------------------- Menyular -----------------------
+
+# "/" tugmasini bosganda chiqadigan buyruqlar ro'yxati
+BOT_COMMANDS = [
+    BotCommand("start", "🚀 Botni ishga tushirish"),
+    BotCommand("help", "📖 Yordam va buyruqlar"),
+    BotCommand("rasm", "🎨 Rasm yaratish (premium)"),
+    BotCommand("prezentatsiya", "📊 Prezentatsiya yaratish (premium)"),
+    BotCommand("obuna", "💎 Premium obuna haqida"),
+    BotCommand("id", "🆔 Telegram ID raqamim"),
+]
+
+
+def main_keyboard() -> ReplyKeyboardMarkup:
+    """Asosiy menyu — chat ostidagi tugmalar paneli."""
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🎨 Rasm yaratish"), KeyboardButton("📊 Prezentatsiya")],
+            [KeyboardButton("💎 Obuna"), KeyboardButton("🆔 Mening ID")],
+            [KeyboardButton("📖 Yordam")],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
+async def post_init(application: Application) -> None:
+    """Bot ishga tushganda Telegram'ga buyruqlar menyusini ro'yxatdan o'tkazadi."""
+    try:
+        await application.bot.set_my_commands(BOT_COMMANDS)
+        logger.info("Bot buyruqlar menyusi (/) o'rnatildi")
+    except Exception:  # noqa: BLE001
+        logger.exception("Buyruqlar menyusini o'rnatishda xato")
 
 
 def _split(text: str, limit: int = TG_LIMIT):
@@ -91,7 +127,9 @@ def _is_admin(update: Update) -> bool:
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        WELCOME_MESSAGE, parse_mode=constants.ParseMode.MARKDOWN
+        WELCOME_MESSAGE,
+        parse_mode=constants.ParseMode.MARKDOWN,
+        reply_markup=main_keyboard(),
     )
 
 
@@ -308,7 +346,22 @@ async def users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # ----------------------- Matn / Rasm bilan savol -----------------------
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    question = update.message.text
+    question = update.message.text or ""
+
+    # Tugmalar paneli matnlari — buyruqlarga yo'naltiramiz
+    quick = {
+        "🎨 Rasm yaratish": rasm,
+        "📊 Prezentatsiya": prezentatsiya,
+        "💎 Obuna": obuna,
+        "🆔 Mening ID": my_id,
+        "📖 Yordam": help_command,
+    }
+    if question in quick:
+        # /rasm va /prezentatsiya argumentsiz chaqirilganda foydalanish ko'rsatmasini beradi
+        context.args = []
+        await quick[question](update, context)
+        return
+
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING
     )
@@ -353,7 +406,7 @@ def build_application(token: str | None = None) -> Application:
             "(@BotFather dan oling)."
         )
 
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).post_init(post_init).build()
 
     # Asosiy
     app.add_handler(CommandHandler("start", start))
