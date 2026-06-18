@@ -35,41 +35,110 @@ _MUTED = (0x8B, 0x98, 0xA9)
 
 
 def _extract_json(text: str) -> Dict[str, Any]:
-    """AI javobidan JSON qismini ajratib oladi."""
+    """AI javobidan JSON qismini ajratib oladi (markdown bloklari, qo'shimcha matnga chidamli)."""
     text = (text or "").strip()
-    # ```json ... ``` bloklarini olib tashlash
-    text = re.sub(r"^```(?:json)?\s*", "", text)
-    text = re.sub(r"\s*```$", "", text)
+    if not text:
+        raise PresentationError("AI bo'sh javob qaytardi.")
+
+    # ```json ... ``` yoki ``` ... ``` bloklarini olib tashlash (boshi va oxiri)
+    text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
+    text = re.sub(r"\s*```\s*$", "", text)
+    text = text.strip()
+
+    # 1. To'g'ridan-to'g'ri parse qilishga urinish
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Matn ichidan birinchi { ... } blokni topishga urinish
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group(0))
-            except json.JSONDecodeError as exc:
-                raise PresentationError(
-                    f"AI javobidan prezentatsiya ma'lumotini o'qib bo'lmadi: {exc}"
-                ) from exc
-        raise PresentationError(
-            "AI to'g'ri formatda javob bermadi. Qayta urinib ko'ring."
-        )
+        pass
+
+    # 2. Eng tashqi { ... } blokni topish (qavslarni hisoblab)
+    start = text.find("{")
+    if start == -1:
+        raise PresentationError("AI javobida JSON topilmadi.")
+    depth = 0
+    end = -1
+    in_str = False
+    escape = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_str = not in_str
+            continue
+        if in_str:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    if end == -1:
+        raise PresentationError("AI javobida tugallanmagan JSON.")
+
+    candidate = text[start:end]
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError as exc:
+        # Oxirgi urinish: oddiy "trailing comma" muammolarini tuzatish
+        cleaned = re.sub(r",(\s*[}\]])", r"\1", candidate)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            raise PresentationError(
+                f"AI javobidan prezentatsiya ma'lumotini o'qib bo'lmadi: {exc}"
+            ) from exc
 
 
 def generate_outline(topic: str, slides: int = 8) -> Dict[str, Any]:
-    """AI orqali prezentatsiya rejasini (JSON) yaratadi."""
+    """AI orqali prezentatsiya rejasini (JSON) yaratadi.
+
+    AI ba'zan formatga rioya qilmasligi mumkin - shuning uchun 2 marta urinamiz.
+    """
     if not config.is_configured():
         raise PresentationError(
             "AI kaliti sozlanmagan. Prezentatsiya uchun GEMINI_API_KEY yoki "
             "GROQ_API_KEY kerak."
         )
+
     prompt = presentation_prompt(topic, slides=slides)
-    raw = ai.ask(prompt)
-    data = _extract_json(raw)
-    if "slides" not in data or not isinstance(data["slides"], list):
-        raise PresentationError("AI javobida slaydlar topilmadi.")
-    return data
+    last_err: Exception | None = None
+    for attempt in range(2):
+        try:
+            # Maxsus system prompt: faqat JSON qaytar
+            raw = ai.ask_with_system(
+                prompt,
+                "Sen prezentatsiya tuzuvchi yordamchisan. Faqat va faqat to'g'ri "
+                "JSON ko'rinishida javob berasan. Boshqa hech qanday matn, "
+                "izoh yoki markdown qo'shma.",
+            )
+            data = _extract_json(raw)
+            if "slides" not in data or not isinstance(data["slides"], list):
+                raise PresentationError("AI javobida slaydlar topilmadi.")
+            if not data["slides"]:
+                raise PresentationError("AI bo'sh slaydlar ro'yxatini qaytardi.")
+            return data
+        except PresentationError as exc:
+            last_err = exc
+            logger.warning(
+                "Prezentatsiya AI urinishi #%d muvaffaqiyatsiz: %s",
+                attempt + 1, exc,
+            )
+            continue
+        except Exception as exc:  # AIError va boshqalar
+            # AI darajasidagi xato — qayta urinishning ma'nosi yo'q
+            raise PresentationError(str(exc)) from exc
+
+    raise PresentationError(
+        f"Prezentatsiyani yaratib bo'lmadi (AI to'g'ri formatda javob bermadi). "
+        f"Boshqa mavzu bilan qayta urinib ko'ring. Tafsilot: {last_err}"
+    )
 
 
 def _rgb(color):

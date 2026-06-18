@@ -17,7 +17,19 @@ AI_PROVIDER = _get("AI_PROVIDER", "gemini").lower()
 
 # Gemini
 GEMINI_API_KEY = _get("GEMINI_API_KEY")
-GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-1.5-flash")
+# Asosiy model. 2026-yil holatiga ko'ra ishlaydigan modellar:
+# gemini-2.5-flash, gemini-2.5-flash-lite, gemini-2.5-pro
+GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-2.5-flash")
+# Zaxira modellar - asosiy ishlamasa, navbat bilan sinaladi.
+# Vergul bilan ajratilgan ro'yxat .env orqali ham berilishi mumkin.
+GEMINI_FALLBACK_MODELS = [
+    m.strip()
+    for m in _get(
+        "GEMINI_FALLBACK_MODELS",
+        "gemini-2.5-flash-lite,gemini-flash-latest,gemini-2.5-pro",
+    ).split(",")
+    if m.strip()
+]
 
 # Groq
 GROQ_API_KEY = _get("GROQ_API_KEY")
