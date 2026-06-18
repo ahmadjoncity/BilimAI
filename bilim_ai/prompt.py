@@ -77,14 +77,22 @@ olib chiqishdir.
 
 # Telegram /start uchun salomlashuv
 WELCOME_MESSAGE = (
-    "Assalomu alaykum! Men *BilimAI* - sizning shaxsiy o'quv yordamchingizman. 🎓\n\n"
-    "Men sizga quyidagilarda yordam beraman:\n"
-    "📐 Matematika, Fizika, Kimyo\n"
-    "🧬 Biologiya, Tarix, Geografiya\n"
-    "🇬🇧 Ingliz tili (tarjima, grammatika, insho)\n"
-    "💻 Dasturlash (Python, JavaScript va h.k.)\n"
-    "📷 Rasmdagi masalalarni yechish\n\n"
-    "Savolingizni yozing yoki masala rasmini yuboring!"
+    "✨ *Assalomu alaykum!*\n\n"
+    "Men — *BilimAI* 🎓\n"
+    "Sizning shaxsiy sun'iy intellekt o'quv yordamchingiz.\n\n"
+    "━━━━━━━━━━━━━━━━━━━\n"
+    "🎯 *Imkoniyatlarim:*\n\n"
+    "📚  Aniq fanlar — _matematika, fizika, kimyo_\n"
+    "🧬  Tabiiy fanlar — _biologiya, geografiya_\n"
+    "📜  Insoniyat fanlari — _tarix, adabiyot_\n"
+    "🇬🇧  Ingliz tili — _tarjima, grammatika, insho_\n"
+    "💻  Dasturlash — _Python, JavaScript va h.k._\n"
+    "📷  Masala rasmini yuboring — yechib beraman!\n"
+    "━━━━━━━━━━━━━━━━━━━\n\n"
+    "💎 *Premium imkoniyatlar:*\n"
+    "🎨  Sun'iy intellekt rasmlar yaratish\n"
+    "📊  Tayyor prezentatsiyalar (.pptx)\n\n"
+    "👇 *Pastdagi tugmalardan foydalaning yoki savolingizni yozing!*"
 )
 
 
