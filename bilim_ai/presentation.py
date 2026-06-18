@@ -1,172 +1,202 @@
 """Prezentatsiya (.pptx) yaratish moduli.
 
-AI yordamida mavzu bo'yicha slaydlar tuzilishini (JSON) oladi,
-keyin python-pptx orqali haqiqiy PowerPoint faylini quradi.
+Ishlash tartibi:
+  1. AI (Gemini/Groq) mavzu bo'yicha slaydlar kontentini JSON ko'rinishda yaratadi.
+  2. python-pptx kutubxonasi yordamida chiroyli .pptx fayl quriladi.
 
 Foydalanish:
     from bilim_ai.presentation import create_presentation
-    pptx_bytes, sarlavha = create_presentation("Suvning aylanishi", slaydlar=8)
+    fayl_yoli = create_presentation("Suv aylanishi", slides=8)
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import re
-from io import BytesIO
+import tempfile
+from typing import Any, Dict
 
-from pptx import Presentation
-from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
-from pptx.util import Inches, Pt
+from . import ai, config
+from .prompt import presentation_prompt
 
-from . import ai
-
-# Rang sxemasi (BilimAI ko'k-yashil)
-DARK = RGBColor(0x0F, 0x14, 0x19)
-ACCENT = RGBColor(0x4F, 0x9C, 0xF9)
-ACCENT2 = RGBColor(0x14, 0xB8, 0xA6)
-LIGHT = RGBColor(0xF5, 0xF7, 0xFA)
-TEXT = RGBColor(0x23, 0x2C, 0x38)
-
-_PROMPT = """Sen prezentatsiya tuzuvchi mutaxassissan. Foydalanuvchi bergan mavzu
-bo'yicha {n} ta slayddan iborat prezentatsiya rejasini tuzasan.
-
-QAT'IY QOIDA: Faqat JSON qaytar, boshqa hech narsa yozma. Markdown ham yozma.
-Til: mavzu qaysi tilda bo'lsa, o'sha tilda yoz (o'zbekcha bo'lsa o'zbekcha).
-
-JSON tuzilishi aniq shunday bo'lsin:
-{{
-  "title": "Prezentatsiya sarlavhasi",
-  "subtitle": "Qisqa tavsif yoki muallif joyi",
-  "slides": [
-    {{"heading": "Slayd sarlavhasi", "bullets": ["fikr 1", "fikr 2", "fikr 3"]}}
-  ]
-}}
-
-Har bir slaydda 3-5 ta qisqa, mazmunli bullet bo'lsin. Oxirgi slayd xulosa bo'lsin.
-Mavzu: {topic}
-"""
+logger = logging.getLogger("BilimAI.presentation")
 
 
-def _extract_json(raw: str) -> dict:
+class PresentationError(Exception):
+    """Prezentatsiya yaratishda yuzaga keladigan xatolar."""
+
+
+# Slayd ranglari (zamonaviy ko'k mavzu)
+_BG = (0x0F, 0x14, 0x19)
+_ACCENT = (0x4F, 0x9C, 0xF9)
+_TEXT = (0xE6, 0xED, 0xF3)
+_MUTED = (0x8B, 0x98, 0xA9)
+
+
+def _extract_json(text: str) -> Dict[str, Any]:
     """AI javobidan JSON qismini ajratib oladi."""
-    # ```json ... ``` bloklarini tozalash
-    cleaned = re.sub(r"```(?:json)?", "", raw).strip().strip("`").strip()
-    # Birinchi { dan oxirgi } gacha
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end != -1:
-        cleaned = cleaned[start : end + 1]
-    return json.loads(cleaned)
-
-
-def generate_outline(topic: str, slaydlar: int = 8) -> dict:
-    """Mavzu bo'yicha slaydlar rejasini (dict) qaytaradi."""
-    prompt = _PROMPT.format(n=slaydlar, topic=topic)
-    raw = ai.ask_with_system(prompt, "Sen faqat to'g'ri JSON qaytaradigan yordamchisan.")
+    text = (text or "").strip()
+    # ```json ... ``` bloklarini olib tashlash
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
     try:
-        data = _extract_json(raw)
-    except Exception:
-        # Fallback: oddiy tuzilish
-        data = {
-            "title": topic,
-            "subtitle": "BilimAI tomonidan yaratilgan",
-            "slides": [{"heading": topic, "bullets": [raw[:500]]}],
-        }
-    # Tuzilishni tekshirish
-    data.setdefault("title", topic)
-    data.setdefault("subtitle", "BilimAI tomonidan yaratilgan")
-    data.setdefault("slides", [])
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Matn ichidan birinchi { ... } blokni topishga urinish
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError as exc:
+                raise PresentationError(
+                    f"AI javobidan prezentatsiya ma'lumotini o'qib bo'lmadi: {exc}"
+                ) from exc
+        raise PresentationError(
+            "AI to'g'ri formatda javob bermadi. Qayta urinib ko'ring."
+        )
+
+
+def generate_outline(topic: str, slides: int = 8) -> Dict[str, Any]:
+    """AI orqali prezentatsiya rejasini (JSON) yaratadi."""
+    if not config.is_configured():
+        raise PresentationError(
+            "AI kaliti sozlanmagan. Prezentatsiya uchun GEMINI_API_KEY yoki "
+            "GROQ_API_KEY kerak."
+        )
+    prompt = presentation_prompt(topic, slides=slides)
+    raw = ai.ask(prompt)
+    data = _extract_json(raw)
+    if "slides" not in data or not isinstance(data["slides"], list):
+        raise PresentationError("AI javobida slaydlar topilmadi.")
     return data
 
 
-def _add_title_slide(prs: Presentation, title: str, subtitle: str) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])  # bo'sh layout
-    # Fon
-    bg = slide.shapes.add_shape(1, 0, 0, prs.slide_width, prs.slide_height)
-    bg.fill.solid()
-    bg.fill.fore_color.rgb = DARK
-    bg.line.fill.background()
-    bg.shadow.inherit = False
+def _rgb(color):
+    from pptx.dml.color import RGBColor
 
-    # Sarlavha
-    box = slide.shapes.add_textbox(Inches(0.8), Inches(2.2), Inches(11.5), Inches(2))
-    tf = box.text_frame
-    tf.word_wrap = True
-    p = tf.paragraphs[0]
-    p.text = title
-    p.alignment = PP_ALIGN.CENTER
-    p.font.size = Pt(44)
-    p.font.bold = True
-    p.font.color.rgb = LIGHT
-
-    # Subtitle
-    sub = slide.shapes.add_textbox(Inches(0.8), Inches(4.3), Inches(11.5), Inches(1))
-    stf = sub.text_frame
-    stf.word_wrap = True
-    sp = stf.paragraphs[0]
-    sp.text = subtitle
-    sp.alignment = PP_ALIGN.CENTER
-    sp.font.size = Pt(20)
-    sp.font.color.rgb = ACCENT
+    return RGBColor(*color)
 
 
-def _add_content_slide(prs: Presentation, heading: str, bullets: list, index: int) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    # Yon chiziq (accent)
-    bar = slide.shapes.add_shape(1, 0, 0, Inches(0.25), prs.slide_height)
-    bar.fill.solid()
-    bar.fill.fore_color.rgb = ACCENT if index % 2 == 0 else ACCENT2
-    bar.line.fill.background()
-    bar.shadow.inherit = False
+def build_pptx(data: Dict[str, Any], out_path: str | None = None) -> str:
+    """Berilgan reja (JSON) asosida .pptx fayl yaratadi va fayl yo'lini qaytaradi."""
+    from pptx import Presentation
+    from pptx.enum.text import PP_ALIGN
+    from pptx.util import Inches, Pt
 
-    # Sarlavha
-    head = slide.shapes.add_textbox(Inches(0.7), Inches(0.5), Inches(12), Inches(1))
-    htf = head.text_frame
-    htf.word_wrap = True
-    hp = htf.paragraphs[0]
-    hp.text = heading
-    hp.font.size = Pt(32)
-    hp.font.bold = True
-    hp.font.color.rgb = TEXT
-
-    # Bulletlar
-    body = slide.shapes.add_textbox(Inches(0.9), Inches(1.7), Inches(11.5), Inches(5))
-    btf = body.text_frame
-    btf.word_wrap = True
-    for i, bullet in enumerate(bullets):
-        para = btf.paragraphs[0] if i == 0 else btf.add_paragraph()
-        para.text = f"•  {bullet}"
-        para.font.size = Pt(20)
-        para.font.color.rgb = TEXT
-        para.space_after = Pt(12)
-
-
-def build_pptx(outline: dict) -> bytes:
-    """Slaydlar rejasidan (dict) .pptx faylini bytes ko'rinishida quradi."""
     prs = Presentation()
     prs.slide_width = Inches(13.333)  # 16:9
     prs.slide_height = Inches(7.5)
+    blank = prs.slide_layouts[6]  # bo'sh layout
 
-    _add_title_slide(prs, outline.get("title", ""), outline.get("subtitle", ""))
-    for i, slide in enumerate(outline.get("slides", [])):
-        heading = slide.get("heading", f"Slayd {i + 1}")
-        bullets = slide.get("bullets", [])
-        if isinstance(bullets, str):
-            bullets = [bullets]
-        _add_content_slide(prs, heading, bullets, i)
+    def add_bg(slide):
+        rect = slide.shapes.add_shape(
+            1,  # MSO_SHAPE.RECTANGLE
+            Inches(0), Inches(0), prs.slide_width, prs.slide_height,
+        )
+        rect.fill.solid()
+        rect.fill.fore_color.rgb = _rgb(_BG)
+        rect.line.fill.background()
+        rect.shadow.inherit = False
+        # Orqaga surish
+        slide.shapes._spTree.remove(rect._element)
+        slide.shapes._spTree.insert(2, rect._element)
+        return rect
 
-    buf = BytesIO()
-    prs.save(buf)
-    buf.seek(0)
-    return buf.read()
+    def add_accent_bar(slide):
+        bar = slide.shapes.add_shape(
+            1, Inches(0.6), Inches(1.6), Inches(2.2), Inches(0.12),
+        )
+        bar.fill.solid()
+        bar.fill.fore_color.rgb = _rgb(_ACCENT)
+        bar.line.fill.background()
+        bar.shadow.inherit = False
+
+    # --- Title slayd ---
+    title_text = str(data.get("title", "Prezentatsiya"))
+    subtitle_text = str(data.get("subtitle", ""))
+
+    slide = prs.slides.add_slide(blank)
+    add_bg(slide)
+    tb = slide.shapes.add_textbox(Inches(0.9), Inches(2.6), Inches(11.5), Inches(2.0))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    p.text = title_text
+    p.font.size = Pt(46)
+    p.font.bold = True
+    p.font.color.rgb = _rgb(_TEXT)
+    if subtitle_text:
+        p2 = tf.add_paragraph()
+        p2.text = subtitle_text
+        p2.font.size = Pt(22)
+        p2.font.color.rgb = _rgb(_ACCENT)
+
+    brand = slide.shapes.add_textbox(Inches(0.9), Inches(6.7), Inches(8), Inches(0.5))
+    bp = brand.text_frame.paragraphs[0]
+    bp.text = "BilimAI"
+    bp.font.size = Pt(14)
+    bp.font.color.rgb = _rgb(_MUTED)
+
+    # --- Kontent slaydlar ---
+    for item in data.get("slides", []):
+        if not isinstance(item, dict):
+            continue
+        heading = str(item.get("heading", "")).strip()
+        bullets = item.get("bullets", []) or []
+        # Title slaydni qayta yaratmaymiz (agar AI uni ham qo'shsa)
+        if not heading and not bullets:
+            continue
+
+        slide = prs.slides.add_slide(blank)
+        add_bg(slide)
+        add_accent_bar(slide)
+
+        # Sarlavha
+        head_box = slide.shapes.add_textbox(
+            Inches(0.6), Inches(0.55), Inches(12.1), Inches(1.0)
+        )
+        hp = head_box.text_frame.paragraphs[0]
+        hp.text = heading
+        hp.font.size = Pt(32)
+        hp.font.bold = True
+        hp.font.color.rgb = _rgb(_TEXT)
+
+        # Punktlar
+        body = slide.shapes.add_textbox(
+            Inches(0.8), Inches(2.0), Inches(11.6), Inches(4.8)
+        )
+        bf = body.text_frame
+        bf.word_wrap = True
+        first = True
+        for b in bullets:
+            text = str(b).strip()
+            if not text:
+                continue
+            para = bf.paragraphs[0] if first else bf.add_paragraph()
+            para.text = f"•  {text}"
+            para.font.size = Pt(20)
+            para.font.color.rgb = _rgb(_TEXT)
+            para.space_after = Pt(14)
+            para.alignment = PP_ALIGN.LEFT
+            first = False
+
+    if out_path is None:
+        tmp = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".pptx", prefix="bilimai_"
+        )
+        out_path = tmp.name
+        tmp.close()
+
+    prs.save(out_path)
+    return out_path
 
 
-def create_presentation(topic: str, slaydlar: int = 8):
-    """Mavzu bo'yicha to'liq prezentatsiya yaratadi.
-
-    Qaytaradi: (pptx_bytes, sarlavha)
-    """
-    outline = generate_outline(topic, slaydlar)
-    pptx_bytes = build_pptx(outline)
-    return pptx_bytes, outline.get("title", topic)
+def create_presentation(topic: str, slides: int = 8, out_path: str | None = None) -> str:
+    """Mavzu bo'yicha to'liq prezentatsiya yaratadi. .pptx fayl yo'lini qaytaradi."""
+    topic = (topic or "").strip()
+    if not topic:
+        raise PresentationError("Prezentatsiya uchun mavzu bo'sh bo'lishi mumkin emas.")
+    slides = max(3, min(slides, 15))
+    outline = generate_outline(topic, slides=slides)
+    return build_pptx(outline, out_path=out_path)

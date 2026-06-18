@@ -77,13 +77,45 @@ olib chiqishdir.
 
 # Telegram /start uchun salomlashuv
 WELCOME_MESSAGE = (
-    "Assalomu alaykum! Men *BilimAI* - sizning shaxsiy o'quv yordamchingizman. 🎓\n\n"
-    "Men sizga quyidagilarda yordam beraman:\n"
-    "📐 Matematika, Fizika, Kimyo\n"
-    "🧬 Biologiya, Tarix, Geografiya\n"
-    "🇬🇧 Ingliz tili (tarjima, grammatika, insho)\n"
-    "💻 Dasturlash (Python, JavaScript va h.k.)\n"
-    "📷 Rasmdagi masalalarni yechish\n"
-    "📊 Prezentatsiya yaratish (/prezentatsiya mavzu)\n\n"
-    "Savolingizni yozing yoki masala rasmini yuboring!"
+    "👋 *Assalomu alaykum!*\n\n"
+    "Men *BilimAI* — sizning shaxsiy AI o'quv yordamchingizman. 🎓\n\n"
+    "📚 *Bepul yordam beraman:*\n"
+    "   📐 Matematika, Fizika, Kimyo\n"
+    "   🧬 Biologiya, Tarix, Geografiya\n"
+    "   🇬🇧 Ingliz tili  •  💻 Dasturlash\n"
+    "   📷 Rasmdagi masalalarni yechish\n\n"
+    "💎 *Premium imkoniyatlar:*\n"
+    "   🎨 Rasm yaratish  •  📊 Prezentatsiya\n\n"
+    "━━━━━━━━━━━━━━━\n"
+    "👇 Quyidagi tugmalardan tanlang yoki savolingizni yozing!"
 )
+
+
+
+# Prezentatsiya uchun maxsus ko'rsatma (AI dan toza JSON so'raymiz)
+def presentation_prompt(topic: str, slides: int = 8, language_hint: str = "") -> str:
+    """Prezentatsiya kontenti uchun AI ga beriladigan ko'rsatma yaratadi."""
+    return f"""Sen professional prezentatsiya tuzuvchisan. Quyidagi mavzu bo'yicha
+chiroyli, mantiqiy va o'rgatuvchi taqdimot (slaydlar) tayyorla.
+
+MAVZU: {topic}
+
+QOIDALAR:
+1. Javobni FAQAT to'g'ri (valid) JSON ko'rinishida ber. Boshqa hech narsa yozma,
+   ```json kabi belgilar ham qo'shma.
+2. Foydalanuvchi mavzusi qaysi tilda bo'lsa, slaydlar ham shu tilda bo'lsin
+   (o'zbekcha mavzu -> o'zbekcha). {language_hint}
+3. Jami {slides} ta slayd bo'lsin: 1-slayd sarlavha (title) slaydi,
+   oxirgisi xulosa/rahmat slaydi.
+4. Har bir kontent slaydida 3-5 ta qisqa, lo'nda punkt (bullet) bo'lsin.
+   Punktlar uzun gap emas, qisqa fikr bo'lsin.
+
+JSON STRUKTURASI (aynan shunday):
+{{
+  "title": "Prezentatsiya umumiy sarlavhasi",
+  "subtitle": "Qisqa izoh yoki muallif",
+  "slides": [
+    {{"heading": "Slayd sarlavhasi", "bullets": ["punkt 1", "punkt 2", "punkt 3"]}}
+  ]
+}}
+"""

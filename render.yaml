@@ -1,0 +1,22 @@
+# Render.com uchun bepul deploy sozlamasi (Blueprint).
+# Render saytida "New +" -> "Blueprint" -> repozitoriyni tanlang.
+# Kalitlarni (TELEGRAM_BOT_TOKEN, GEMINI_API_KEY) Render dashboard'da qo'shasiz.
+services:
+  - type: web
+    name: bilimai
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn web:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/health
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ADMIN_USERNAME
+        value: ravshanovichch
+      # Birinchi deploydan keyin Render bergan URL'ni shu yerga qo'ying,
+      # masalan: https://bilimai.onrender.com
+      - key: WEBHOOK_URL
+        sync: false

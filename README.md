@@ -5,6 +5,37 @@ Matematika, fizika, kimyo, biologiya, tarix, geografiya, ingliz tili va dasturla
 bo'yicha savollarga bosqichma-bosqich, o'rgatuvchi javoblar beradi. Rasmdagi
 masalalarni ham yechib beradi.
 
+## ✨ Imkoniyatlar
+
+| Funksiya | Buyruq | Holat |
+|----------|--------|-------|
+| 💬 Savol-javob (8+ fan) | matn yozish | 🆓 Bepul |
+| 📷 Rasmdagi masalani yechish | rasm yuborish | 🆓 Bepul |
+| 🎨 Rasm yaratish (AI rasm chizadi) | `/rasm tavsif` | 💎 Pullik obuna |
+| 📊 Prezentatsiya (.pptx) tayyorlash | `/prezentatsiya mavzu` | 💎 Pullik obuna |
+
+> 💎 **Pullik obuna** uchun admin bilan bog'laning: **[@ravshanovichch](https://t.me/ravshanovichch)**
+> Rasm yaratish butunlay **bepul** API (Pollinations.ai) orqali ishlaydi — qo'shimcha kalit shart emas.
+
+### 🤖 Bot buyruqlari
+
+- `/start` — boshlash
+- `/help` — yordam va buyruqlar ro'yxati
+- `/id` — Telegram ID raqamingiz (obuna uchun kerak)
+- `/obuna` — pullik obuna haqida ma'lumot
+- `/rasm <tavsif>` — rasm yaratish *(premium)*
+- `/prezentatsiya <mavzu>` — taqdimot tayyorlash *(premium)*
+
+### 👑 Admin buyruqlari (faqat egasi uchun)
+
+- `/addpremium <user_id> [kun] [username]` — foydalanuvchiga premium berish (kun=0 → muddatsiz)
+- `/delpremium <user_id>` — premiumdan o'chirish
+- `/users` — barcha premium foydalanuvchilar ro'yxati
+
+> Admin `.env` dagi `ADMIN_USERNAME` (sukut bo'yicha `ravshanovichch`) yoki
+> `ADMIN_ID` orqali aniqlanadi va barcha funksiyalardan **bepul** foydalanadi.
+
+
 Loyiha **ikki ko'rinishda** ishlaydi:
 - 🤖 **Telegram bot** (`bot.py`)
 - 🌐 **Web ilova** (`web.py`) — brauzerda sinab ko'rish uchun
@@ -23,9 +54,12 @@ Loyiha **ikki ko'rinishda** ishlaydi:
 ```
 BilimAI/
 ├── bilim_ai/            # Asosiy "miya"
-│   ├── prompt.py        # BilimAI system prompt (xulq-atvor qoidalari)
-│   ├── config.py        # Muhit o'zgaruvchilarini o'qiydi
-│   └── ai.py            # AI provayder (Gemini / Groq)
+│   ├── prompt.py        # BilimAI system prompt + prezentatsiya prompti
+│   ├── config.py        # Muhit o'zgaruvchilarini o'qiydi (admin sozlamalari ham)
+│   ├── ai.py            # AI provayder (Gemini / Groq)
+│   ├── subscription.py  # Pullik obuna (premium) tizimi
+│   ├── image_gen.py     # 🎨 Rasm yaratish (Pollinations.ai - bepul)
+│   └── presentation.py  # 📊 Prezentatsiya (.pptx) yaratish
 ├── static/              # Web interfeys (HTML + CSS + JS)
 │   ├── index.html
 │   ├── style.css
@@ -106,6 +140,41 @@ TELEGRAM_BOT_TOKEN=botfather_bergan_token
 
 > Telegram botni doimiy ishlatish uchun Railway'da alohida **service** yaratib,
 > start buyrug'ini `python bot.py` qilib qo'ying.
+
+---
+
+## 🆓 Render.com'ga BEPUL deploy (karta shart emas, bot 24/7 ishlaydi)
+
+Railway'ning bepul krediti tugasa, **Render** eng yaxshi bepul alternativa.
+Bot bu yerda **webhook** rejimida ishlaydi — shuning uchun bitta bepul web xizmat
+ham web interfeys, ham Telegram botni boshqaradi.
+
+1. Kodni GitHub'ga yuklang.
+2. <https://render.com> → **Login with GitHub**.
+3. **New +** → **Blueprint** → `BilimAI` repozitoriyasini tanlang (`render.yaml` avtomatik o'qiladi).
+   - Yoki **New + → Web Service** → repo tanlang → Build: `pip install -r requirements.txt`,
+     Start: `uvicorn web:app --host 0.0.0.0 --port $PORT`.
+4. **Environment** bo'limida kalitlarni qo'shing:
+   - `TELEGRAM_BOT_TOKEN` = to'liq token (`123:AAH...`)
+   - `GEMINI_API_KEY` = `AIza...`
+   - `ADMIN_USERNAME` = `ravshanovichch`
+5. Birinchi deploy tugagach, Render sizga URL beradi (masalan `https://bilimai.onrender.com`).
+6. O'sha URL'ni `WEBHOOK_URL` o'zgaruvchisiga qo'shing va **qayta deploy** qiling.
+   Bot avtomatik webhook o'rnatadi va ishga tushadi. ✅
+
+### ⏰ Uyqudan saqlash (24/7 ishlashi uchun)
+
+Render bepul xizmati 15 daqiqa harakatsiz tursa "uxlaydi". Shuni oldini olish uchun
+bepul "pinger" sozlang:
+
+- <https://uptimerobot.com> (bepul) → **Add New Monitor** → HTTP(s) →
+  URL: `https://bilimai.onrender.com/api/health` → interval: **5 daqiqa**.
+
+Shunda bot doim uyg'oq turadi va xabarlarga darhol javob beradi.
+
+> 💡 **Boshqa bepul variantlar:** Koyeb (`koyeb.com`) ham shu usulda ishlaydi.
+> Doimiy, kuchli va mutlaqo bepul server xohlasangiz — **Oracle Cloud Always Free** VM
+> (karta talab qilinadi, lekin pul yechilmaydi) eng yaxshi tanlov.
 
 ---
 
