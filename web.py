@@ -8,17 +8,74 @@ Keyin brauzerda oching: http://localhost:8000
 """
 
 import logging
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from telegram import Update
 
+import bot as bot_module
 from bilim_ai import ai, config, image_gen, presentation
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BilimAI.web")
 
-app = FastAPI(title="BilimAI", description="O'quv yordamchisi", version="1.0.0")
+# Telegram Application (webhook rejimi uchun). WEBHOOK_URL berilsa to'ldiriladi.
+_tg_app = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Server ishga tushganda Telegram botni webhook rejimida ulaydi."""
+    global _tg_app
+    if config.WEBHOOK_URL and config.TELEGRAM_BOT_TOKEN:
+        try:
+            _tg_app = bot_module.build_application()
+            await _tg_app.initialize()
+            await _tg_app.start()
+            hook = f"{config.WEBHOOK_URL}/telegram/{config.TELEGRAM_BOT_TOKEN}"
+            await _tg_app.bot.set_webhook(
+                url=hook, allowed_updates=Update.ALL_TYPES
+            )
+            logger.info("Telegram webhook o'rnatildi: %s", config.WEBHOOK_URL)
+        except Exception:  # noqa: BLE001
+            logger.exception("Webhook o'rnatishda xato")
+            _tg_app = None
+    else:
+        logger.info(
+            "WEBHOOK_URL yo'q — bot webhook rejimida ishlamaydi (faqat web interfeys)."
+        )
+    yield
+    # Shutdown
+    if _tg_app is not None:
+        try:
+            await _tg_app.stop()
+            await _tg_app.shutdown()
+        except Exception:  # noqa: BLE001
+            logger.exception("Botni to'xtatishda xato")
+
+
+app = FastAPI(
+    title="BilimAI",
+    description="O'quv yordamchisi",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+@app.post("/telegram/{token}")
+async def telegram_webhook(token: str, request: Request):
+    """Telegram'dan kelgan yangilanishlarni qabul qiladi (webhook)."""
+    if _tg_app is None or token != config.TELEGRAM_BOT_TOKEN:
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    try:
+        data = await request.json()
+        update = Update.de_json(data, _tg_app.bot)
+        await _tg_app.process_update(update)
+    except Exception:  # noqa: BLE001
+        logger.exception("Webhook update xatosi")
+    return {"ok": True}
 
 
 @app.get("/api/health")

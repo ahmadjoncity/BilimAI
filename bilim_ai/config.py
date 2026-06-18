@@ -35,6 +35,11 @@ ADMIN_ID = _get("ADMIN_ID")
 # Premium foydalanuvchilar saqlanadigan fayl
 PREMIUM_FILE = _get("PREMIUM_FILE", "premium_users.json")
 
+# --- Webhook (Render/Koyeb kabi bepul hostinglar uchun) ---
+# Ilovangizning ochiq URL manzili. Masalan: https://bilimai.onrender.com
+# Agar bo'sh bo'lsa, web server faqat web interfeys sifatida ishlaydi (bot webhooksiz).
+WEBHOOK_URL = _get("WEBHOOK_URL", "").rstrip("/")
+
 # Web server porti
 PORT = int(_get("PORT", "8000") or "8000")
 

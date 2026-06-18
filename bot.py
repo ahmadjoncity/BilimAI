@@ -11,6 +11,8 @@ Ishga tushirish:
     2) python bot.py
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
@@ -339,19 +341,19 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(chunk)
 
 
-def main() -> None:
-    if not config.TELEGRAM_BOT_TOKEN:
+def build_application(token: str | None = None) -> Application:
+    """Telegram Application yaratadi va barcha handlerlarni ro'yxatdan o'tkazadi.
+
+    Ham polling (bot.py), ham webhook (web.py) rejimida ishlatiladi.
+    """
+    token = token or config.TELEGRAM_BOT_TOKEN
+    if not token:
         raise SystemExit(
             "TELEGRAM_BOT_TOKEN topilmadi! .env faylga botingiz tokenini qo'shing "
             "(@BotFather dan oling)."
         )
-    if not config.is_configured():
-        logger.warning(
-            "Diqqat: AI kaliti (GEMINI_API_KEY yoki GROQ_API_KEY) sozlanmagan. "
-            "Bot ishga tushadi, lekin savollarga javob bera olmaydi."
-        )
 
-    app = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
+    app = Application.builder().token(token).build()
 
     # Asosiy
     app.add_handler(CommandHandler("start", start))
@@ -372,8 +374,26 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
+    return app
+
+
+def main() -> None:
+    """Polling rejimida ishga tushiradi (mahalliy/VPS uchun qulay)."""
+    if not config.TELEGRAM_BOT_TOKEN:
+        raise SystemExit(
+            "TELEGRAM_BOT_TOKEN topilmadi! .env faylga botingiz tokenini qo'shing "
+            "(@BotFather dan oling)."
+        )
+    if not config.is_configured():
+        logger.warning(
+            "Diqqat: AI kaliti (GEMINI_API_KEY yoki GROQ_API_KEY) sozlanmagan. "
+            "Bot ishga tushadi, lekin savollarga javob bera olmaydi."
+        )
+
+    app = build_application()
+
     logger.info(
-        "BilimAI bot ishga tushdi. Provayder: %s | Admin: @%s",
+        "BilimAI bot (polling) ishga tushdi. Provayder: %s | Admin: @%s",
         config.active_provider() or "yo'q",
         config.ADMIN_USERNAME,
     )

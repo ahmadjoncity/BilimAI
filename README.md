@@ -136,6 +136,41 @@ TELEGRAM_BOT_TOKEN=botfather_bergan_token
 
 ---
 
+## 🆓 Render.com'ga BEPUL deploy (karta shart emas, bot 24/7 ishlaydi)
+
+Railway'ning bepul krediti tugasa, **Render** eng yaxshi bepul alternativa.
+Bot bu yerda **webhook** rejimida ishlaydi — shuning uchun bitta bepul web xizmat
+ham web interfeys, ham Telegram botni boshqaradi.
+
+1. Kodni GitHub'ga yuklang.
+2. <https://render.com> → **Login with GitHub**.
+3. **New +** → **Blueprint** → `BilimAI` repozitoriyasini tanlang (`render.yaml` avtomatik o'qiladi).
+   - Yoki **New + → Web Service** → repo tanlang → Build: `pip install -r requirements.txt`,
+     Start: `uvicorn web:app --host 0.0.0.0 --port $PORT`.
+4. **Environment** bo'limida kalitlarni qo'shing:
+   - `TELEGRAM_BOT_TOKEN` = to'liq token (`123:AAH...`)
+   - `GEMINI_API_KEY` = `AIza...`
+   - `ADMIN_USERNAME` = `ravshanovichch`
+5. Birinchi deploy tugagach, Render sizga URL beradi (masalan `https://bilimai.onrender.com`).
+6. O'sha URL'ni `WEBHOOK_URL` o'zgaruvchisiga qo'shing va **qayta deploy** qiling.
+   Bot avtomatik webhook o'rnatadi va ishga tushadi. ✅
+
+### ⏰ Uyqudan saqlash (24/7 ishlashi uchun)
+
+Render bepul xizmati 15 daqiqa harakatsiz tursa "uxlaydi". Shuni oldini olish uchun
+bepul "pinger" sozlang:
+
+- <https://uptimerobot.com> (bepul) → **Add New Monitor** → HTTP(s) →
+  URL: `https://bilimai.onrender.com/api/health` → interval: **5 daqiqa**.
+
+Shunda bot doim uyg'oq turadi va xabarlarga darhol javob beradi.
+
+> 💡 **Boshqa bepul variantlar:** Koyeb (`koyeb.com`) ham shu usulda ishlaydi.
+> Doimiy, kuchli va mutlaqo bepul server xohlasangiz — **Oracle Cloud Always Free** VM
+> (karta talab qilinadi, lekin pul yechilmaydi) eng yaxshi tanlov.
+
+---
+
 ## 📤 GitHub'ga yuklash
 
 ```bash
