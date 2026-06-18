@@ -25,6 +25,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from telegram import BotCommand, ReplyKeyboardMarkup, KeyboardButton
 
 from bilim_ai import ai, config, image_gen, presentation, subscription
 from bilim_ai.prompt import WELCOME_MESSAGE
@@ -39,6 +40,41 @@ logger = logging.getLogger("BilimAI.bot")
 TG_LIMIT = 4096
 
 ADMIN_CONTACT = "@ravshanovichch"
+
+
+# ----------------------- Menyular -----------------------
+
+# "/" tugmasini bosganda chiqadigan buyruqlar ro'yxati
+BOT_COMMANDS = [
+    BotCommand("start", "🚀 Botni ishga tushirish"),
+    BotCommand("help", "📖 Yordam va buyruqlar"),
+    BotCommand("rasm", "🎨 Rasm yaratish (premium)"),
+    BotCommand("prezentatsiya", "📊 Prezentatsiya yaratish (premium)"),
+    BotCommand("obuna", "💎 Premium obuna haqida"),
+    BotCommand("id", "🆔 Telegram ID raqamim"),
+]
+
+
+def main_keyboard() -> ReplyKeyboardMarkup:
+    """Asosiy menyu — chat ostidagi tugmalar paneli."""
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🎨 Rasm yaratish"), KeyboardButton("📊 Prezentatsiya")],
+            [KeyboardButton("💎 Obuna"), KeyboardButton("🆔 Mening ID")],
+            [KeyboardButton("📖 Yordam")],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
+async def post_init(application: Application) -> None:
+    """Bot ishga tushganda Telegram'ga buyruqlar menyusini ro'yxatdan o'tkazadi."""
+    try:
+        await application.bot.set_my_commands(BOT_COMMANDS)
+        logger.info("Bot buyruqlar menyusi (/) o'rnatildi")
+    except Exception:  # noqa: BLE001
+        logger.exception("Buyruqlar menyusini o'rnatishda xato")
 
 
 def _split(text: str, limit: int = TG_LIMIT):
@@ -65,11 +101,13 @@ async def _run(func, *args):
 
 def _premium_required_text() -> str:
     return (
-        "🔒 *Bu funksiya faqat pullik obuna uchun.*\n\n"
-        "🎨 Rasm yaratish va 📊 prezentatsiya tayyorlash — premium imkoniyatlar.\n\n"
-        f"Obuna bo'lish uchun admin bilan bog'laning: {ADMIN_CONTACT}\n\n"
-        "Obuna bo'lgach, sizning Telegram ID raqamingiz tizimga qo'shiladi va "
-        "barcha funksiyalar ochiladi. (ID ni bilish uchun /id buyrug'ini bosing)"
+        "🔒 *Premium imkoniyat*\n"
+        "━━━━━━━━━━━━━━━━━━━\n\n"
+        "Bu funksiya faqat *Premium* obunachilar uchun.\n\n"
+        "🎨  AI rasm yaratish\n"
+        "📊  Prezentatsiyalar tayyorlash\n\n"
+        f"📩 Obuna bo'lish uchun: {ADMIN_CONTACT}\n\n"
+        "_ID raqamingizni bilish uchun /id buyrug'ini bosing._"
     )
 
 
@@ -91,36 +129,54 @@ def _is_admin(update: Update) -> bool:
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        WELCOME_MESSAGE, parse_mode=constants.ParseMode.MARKDOWN
+        WELCOME_MESSAGE,
+        parse_mode=constants.ParseMode.MARKDOWN,
+        reply_markup=main_keyboard(),
     )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (
-        "*BilimAI buyruqlari:*\n\n"
-        "📚 *Bepul:*\n"
-        "• Savolingizni yozing — javob beraman\n"
-        "• Masala rasmini yuboring — yechib beraman\n\n"
-        "💎 *Pullik obuna (premium):*\n"
-        "• `/rasm tavsif` — tavsif bo'yicha rasm yarataman\n"
-        "• `/prezentatsiya mavzu` — taqdimot (.pptx) tayyorlayman\n\n"
-        "ℹ️ *Boshqa:*\n"
-        "• /obuna — obuna haqida ma'lumot\n"
-        "• /id — Telegram ID raqamingiz\n"
-        "• /help — yordam\n\n"
-        f"Pullik obuna uchun: {ADMIN_CONTACT}"
+        "📖 *BilimAI — Yordam*\n"
+        "━━━━━━━━━━━━━━━━━━━\n\n"
+        "🆓 *BEPUL imkoniyatlar:*\n"
+        "  • Savolingizni yozing — javob beraman\n"
+        "  • 📷 Masala rasmini yuboring — yechib beraman\n"
+        "  • Matematika, fizika, kimyo, biologiya...\n"
+        "  • Ingliz tili — tarjima, grammatika\n"
+        "  • Dasturlash bo'yicha maslahat\n\n"
+        "💎 *PREMIUM imkoniyatlar:*\n"
+        "  🎨 `/rasm <tavsif>` — AI rasm yaratish\n"
+        "      _Misol:_ `/rasm tog'lar ustida burgut`\n\n"
+        "  📊 `/prezentatsiya <mavzu>` — taqdimot (.pptx)\n"
+        "      _Misol:_ `/prezentatsiya Suv aylanishi`\n\n"
+        "ℹ️ *Foydali buyruqlar:*\n"
+        "  • /start — botni qayta ishga tushirish\n"
+        "  • /obuna — premium haqida\n"
+        "  • /id — Telegram ID raqamingiz\n"
+        "  • /help — ushbu yordam\n\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        f"💬 *Savol/taklif:* {ADMIN_CONTACT}"
     )
     await update.message.reply_text(text, parse_mode=constants.ParseMode.MARKDOWN)
 
 
 async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    status = "💎 Premium" if _is_premium(update) else "🆓 Oddiy (bepul)"
+    is_premium = _is_premium(update)
+    status = "💎 *Premium foydalanuvchi*" if is_premium else "🆓 *Oddiy foydalanuvchi*"
+    extra = (
+        "\n✨ Sizda barcha imkoniyatlar ochiq!"
+        if is_premium
+        else f"\n📩 Premium uchun ID raqamingizni adminga yuboring:\n   {ADMIN_CONTACT}"
+    )
     await update.message.reply_text(
-        f"🆔 Sizning Telegram ID: `{user.id}`\n"
-        f"👤 Username: @{user.username if user.username else '—'}\n"
-        f"Holat: {status}\n\n"
-        f"Pullik obuna uchun ID raqamingizni adminга yuboring: {ADMIN_CONTACT}",
+        "🪪 *Akkaunt ma'lumotlari*\n"
+        "━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🆔  ID: `{user.id}`\n"
+        f"👤  Username: @{user.username if user.username else '—'}\n"
+        f"📊  Holat: {status}\n"
+        f"{extra}",
         parse_mode=constants.ParseMode.MARKDOWN,
     )
 
@@ -128,19 +184,30 @@ async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def obuna(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if _is_premium(update):
         await update.message.reply_text(
-            "✅ Sizda *premium obuna* faol! Barcha funksiyalardan foydalanishingiz mumkin:\n"
-            "🎨 /rasm — rasm yaratish\n"
-            "📊 /prezentatsiya — taqdimot tayyorlash",
+            "✅ *Sizda Premium obuna FAOL!* 💎\n"
+            "━━━━━━━━━━━━━━━━━━━\n\n"
+            "Barcha imkoniyatlar siz uchun ochiq:\n\n"
+            "🎨  /rasm — sun'iy intellekt rasmlar\n"
+            "📊  /prezentatsiya — tayyor taqdimotlar\n"
+            "📚  Cheksiz savol-javob\n"
+            "📷  Rasmli masalalarni yechish\n\n"
+            "🚀 *Bilimingizni oshirishda omad tilaymiz!*",
             parse_mode=constants.ParseMode.MARKDOWN,
         )
         return
     await update.message.reply_text(
-        "💎 *PULLIK OBUNA (PREMIUM)*\n\n"
-        "Premium obuna bilan quyidagilar ochiladi:\n"
-        "🎨 *Rasm yaratish* — istalgan tavsif bo'yicha sun'iy intellekt rasm chizadi\n"
-        "📊 *Prezentatsiya* — mavzu bo'yicha tayyor .pptx taqdimot\n\n"
-        f"📩 Obuna bo'lish uchun admin bilan bog'laning: {ADMIN_CONTACT}\n\n"
-        "Yozganda /id buyrug'i orqali olingan ID raqamingizni yuboring.",
+        "💎 *PREMIUM OBUNA*\n"
+        "━━━━━━━━━━━━━━━━━━━\n\n"
+        "🎁 *Premium bilan nima ochiladi:*\n\n"
+        "🎨 *AI Rasm yaratish*\n"
+        "    _Istalgan tavsif → professional rasm_\n\n"
+        "📊 *Tayyor prezentatsiyalar*\n"
+        "    _Mavzu yozing → .pptx fayl olasiz_\n\n"
+        "⚡ *Tezkor va sifatli javoblar*\n"
+        "🎯 *Cheksiz foydalanish*\n\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        f"📩 *Obuna bo'lish uchun:*\n   {ADMIN_CONTACT}\n\n"
+        "_Yozayotganda /id buyrug'idan olingan ID raqamingizni yuboring._",
         parse_mode=constants.ParseMode.MARKDOWN,
     )
 
@@ -157,8 +224,13 @@ async def rasm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     prompt = " ".join(context.args) if context.args else ""
     if not prompt:
         await update.message.reply_text(
-            "🎨 Rasm yaratish uchun tavsif yozing.\n"
-            "Masalan: `/rasm quyosh botayotgan tog'lar ustida burgut`",
+            "🎨 *Rasm yaratish*\n"
+            "━━━━━━━━━━━━━━━━━━━\n\n"
+            "Tavsif bilan birga buyruqni yozing:\n\n"
+            "📝 *Misol:*\n"
+            "`/rasm quyosh botayotgan tog'lar ustida burgut`\n"
+            "`/rasm cute cat astronaut in space`\n\n"
+            "💡 _Inglizcha tavsif aniqroq natija beradi._",
             parse_mode=constants.ParseMode.MARKDOWN,
         )
         return
@@ -167,13 +239,25 @@ async def rasm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=update.effective_chat.id,
         action=constants.ChatAction.UPLOAD_PHOTO,
     )
-    notice = await update.message.reply_text("🎨 Rasm yaratilmoqda… (10-30 soniya)")
+    notice = await update.message.reply_text(
+        "🎨 *Rasm yaratilmoqda...*\n_Iltimos kuting, 10-30 soniya._",
+        parse_mode=constants.ParseMode.MARKDOWN,
+    )
     try:
         image_bytes = await _run(image_gen.generate_image, prompt)
-        await update.message.reply_photo(photo=image_bytes, caption=f"🎨 {prompt}")
+        await update.message.reply_photo(
+            photo=image_bytes,
+            caption=f"🎨 *{prompt}*",
+            parse_mode=constants.ParseMode.MARKDOWN,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Rasm yaratish xatosi")
-        await update.message.reply_text(f"⚠️ Rasm yaratib bo'lmadi: {exc}")
+        await update.message.reply_text(
+            f"⚠️ *Kechirasiz, rasm yaratib bo'lmadi.*\n\n"
+            f"Sabab: `{exc}`\n\n"
+            f"_Birozdan keyin qayta urinib ko'ring._",
+            parse_mode=constants.ParseMode.MARKDOWN,
+        )
     finally:
         try:
             await notice.delete()
@@ -193,8 +277,13 @@ async def prezentatsiya(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     topic = " ".join(context.args) if context.args else ""
     if not topic:
         await update.message.reply_text(
-            "📊 Prezentatsiya uchun mavzu yozing.\n"
-            "Masalan: `/prezentatsiya Suv aylanishi`",
+            "📊 *Prezentatsiya yaratish*\n"
+            "━━━━━━━━━━━━━━━━━━━\n\n"
+            "Mavzu yozing — tayyor .pptx fayl olasiz.\n\n"
+            "📝 *Misollar:*\n"
+            "`/prezentatsiya Suv aylanishi`\n"
+            "`/prezentatsiya O'zbekiston tarixi`\n"
+            "`/prezentatsiya Sun'iy intellekt`",
             parse_mode=constants.ParseMode.MARKDOWN,
         )
         return
@@ -204,7 +293,8 @@ async def prezentatsiya(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         action=constants.ChatAction.UPLOAD_DOCUMENT,
     )
     notice = await update.message.reply_text(
-        "📊 Prezentatsiya tayyorlanmoqda… (15-40 soniya)"
+        "📊 *Prezentatsiya tayyorlanmoqda...*\n_Iltimos kuting, 15-40 soniya._",
+        parse_mode=constants.ParseMode.MARKDOWN,
     )
     path = None
     try:
@@ -216,12 +306,16 @@ async def prezentatsiya(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             await update.message.reply_document(
                 document=f,
                 filename=f"{safe_name}.pptx",
-                caption=f"📊 «{topic}» — tayyor!",
+                caption=f"📊 *«{topic}»*\n_Tayyor! Tahrirlashingiz mumkin._",
+                parse_mode=constants.ParseMode.MARKDOWN,
             )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Prezentatsiya xatosi")
         await update.message.reply_text(
-            f"⚠️ Prezentatsiya tayyorlab bo'lmadi: {exc}"
+            f"⚠️ *Kechirasiz, prezentatsiya tayyorlab bo'lmadi.*\n\n"
+            f"Sabab: `{exc}`\n\n"
+            f"_Birozdan keyin qayta urinib ko'ring._",
+            parse_mode=constants.ParseMode.MARKDOWN,
         )
     finally:
         try:
@@ -308,7 +402,22 @@ async def users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # ----------------------- Matn / Rasm bilan savol -----------------------
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    question = update.message.text
+    question = update.message.text or ""
+
+    # Tugmalar paneli matnlari — buyruqlarga yo'naltiramiz
+    quick = {
+        "🎨 Rasm yaratish": rasm,
+        "📊 Prezentatsiya": prezentatsiya,
+        "💎 Obuna": obuna,
+        "🆔 Mening ID": my_id,
+        "📖 Yordam": help_command,
+    }
+    if question in quick:
+        # /rasm va /prezentatsiya argumentsiz chaqirilganda foydalanish ko'rsatmasini beradi
+        context.args = []
+        await quick[question](update, context)
+        return
+
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING
     )
@@ -316,7 +425,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         answer = await _run(ai.ask, question)
     except Exception as exc:  # noqa: BLE001
         logger.exception("AI xatosi")
-        answer = f"⚠️ Xatolik yuz berdi: {exc}"
+        answer = (
+            "⚠️ Kechirasiz, hozir javob bera olmayapman.\n"
+            "Birozdan keyin qayta urinib ko'ring."
+        )
     for chunk in _split(answer):
         await update.message.reply_text(chunk)
 
@@ -336,7 +448,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Rasm bilan ishlashda xato")
-        answer = f"⚠️ Rasmni yechishda xatolik: {exc}"
+        answer = (
+            "⚠️ Rasmni tahlil qilib bo'lmadi.\n"
+            "Iltimos aniqroq rasm yuboring yoki birozdan keyin urinib ko'ring."
+        )
     for chunk in _split(answer):
         await update.message.reply_text(chunk)
 
@@ -353,7 +468,7 @@ def build_application(token: str | None = None) -> Application:
             "(@BotFather dan oling)."
         )
 
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).post_init(post_init).build()
 
     # Asosiy
     app.add_handler(CommandHandler("start", start))
