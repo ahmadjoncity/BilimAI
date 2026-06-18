@@ -17,7 +17,7 @@ AI_PROVIDER = _get("AI_PROVIDER", "gemini").lower()
 
 # Gemini
 GEMINI_API_KEY = _get("GEMINI_API_KEY")
-GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-flash-latest")
 
 # Groq
 GROQ_API_KEY = _get("GROQ_API_KEY")
