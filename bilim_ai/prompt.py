@@ -79,43 +79,63 @@ olib chiqishdir.
 WELCOME_MESSAGE = (
     "👋 *Assalomu alaykum!*\n\n"
     "Men *BilimAI* — sizning shaxsiy AI o'quv yordamchingizman. 🎓\n\n"
-    "📚 *Bepul yordam beraman:*\n"
-    "   📐 Matematika, Fizika, Kimyo\n"
-    "   🧬 Biologiya, Tarix, Geografiya\n"
+    "🆓 *BEPUL:*\n"
+    "   📐 Matematika, Fizika, Kimyo, Biologiya\n"
     "   🇬🇧 Ingliz tili  •  💻 Dasturlash\n"
-    "   📷 Rasmdagi masalalarni yechish\n\n"
-    "💎 *Premium imkoniyatlar:*\n"
-    "   🎨 Rasm yaratish  •  📊 Prezentatsiya\n\n"
+    "   📷 Rasmdagi masalalarni yechish\n"
+    "   🎨 Rasm yaratish (AI chizadi!)\n\n"
+    "💎 *PREMIUM (pullik):*\n"
+    "   📊 Professional Prezentatsiya\n"
+    "   🌟 Super Prezentatsiya (16 slayd)\n\n"
     "━━━━━━━━━━━━━━━\n"
-    "👇 Quyidagi tugmalardan tanlang yoki savolingizni yozing!"
+    "📸 Yangiliklar uchun Instagram'ga obuna bo'ling!\n"
+    "👇 Tugmalardan tanlang yoki savolingizni yozing!"
 )
 
 
 
 # Prezentatsiya uchun maxsus ko'rsatma (AI dan toza JSON so'raymiz)
-def presentation_prompt(topic: str, slides: int = 8, language_hint: str = "") -> str:
-    """Prezentatsiya kontenti uchun AI ga beriladigan ko'rsatma yaratadi."""
-    return f"""Sen professional prezentatsiya tuzuvchisan. Quyidagi mavzu bo'yicha
-chiroyli, mantiqiy va o'rgatuvchi taqdimot (slaydlar) tayyorla.
+def presentation_prompt(topic: str, slides: int = 10, language_hint: str = "") -> str:
+    """Professional prezentatsiya kontenti uchun AI ga beriladigan ko'rsatma."""
+    return f"""Sen xalqaro darajadagi professional prezentatsiya (taqdimot) dizayneri
+va kontent strategisisan. Quyidagi mavzu bo'yicha PUXTA, MANTIQIY va CHIROYLI
+taqdimot tayyorla — xuddi McKinsey yoki TED uslubidagi kabi.
 
 MAVZU: {topic}
 
-QOIDALAR:
+QAT'IY QOIDALAR:
 1. Javobni FAQAT to'g'ri (valid) JSON ko'rinishida ber. Boshqa hech narsa yozma,
-   ```json kabi belgilar ham qo'shma.
-2. Foydalanuvchi mavzusi qaysi tilda bo'lsa, slaydlar ham shu tilda bo'lsin
-   (o'zbekcha mavzu -> o'zbekcha). {language_hint}
-3. Jami {slides} ta slayd bo'lsin: 1-slayd sarlavha (title) slaydi,
-   oxirgisi xulosa/rahmat slaydi.
-4. Har bir kontent slaydida 3-5 ta qisqa, lo'nda punkt (bullet) bo'lsin.
-   Punktlar uzun gap emas, qisqa fikr bo'lsin.
+   ```json kabi belgilar, izoh yoki kirish so'zi QO'SHMA.
+2. Mavzu qaysi tilda bo'lsa, butun taqdimot shu tilda bo'lsin
+   (o'zbekcha mavzu -> o'zbekcha matn). {language_hint}
+3. Jami taxminan {slides} ta slayd bo'lsin va quyidagi mantiqiy tuzilishga amal qil:
+   - 1 ta sarlavha slaydi (type: "title")
+   - 1 ta reja/agenda slaydi (type: "agenda")
+   - Mavzuni bo'limlarga bo'lib, kerak joyda bo'lim ajratuvchi (type: "section")
+   - Asosiy mazmun slaydlari (type: "content")
+   - 1 ta xulosa slaydi (type: "summary") va 1 ta yakuniy/rahmat slaydi (type: "closing")
+4. Har bir "content" slaydida:
+   - Aniq, jozibali sarlavha (heading)
+   - 3-5 ta punkt (bullets). Har bir punkt LO'NDA, lekin MAZMUNLI bo'lsin
+     (shunchaki bitta so'z emas — to'liq, foydali fikr, 6-14 so'z).
+   - "takeaway" — slaydning bitta asosiy xulosaviy fikri (ixtiyoriy, qisqa).
+5. Aniq faktlar, raqamlar, misollar va amaliy ma'lumotlardan foydalan.
+   Mavhum gaplardan qoch. Mazmun haqiqiy va ishonchli bo'lsin.
 
-JSON STRUKTURASI (aynan shunday):
+JSON STRUKTURASI (aynan shu kalitlardan foydalan):
 {{
-  "title": "Prezentatsiya umumiy sarlavhasi",
-  "subtitle": "Qisqa izoh yoki muallif",
+  "title": "Asosiy sarlavha",
+  "subtitle": "Qisqa, jozibali kichik sarlavha (1 qator)",
+  "author": "BilimAI",
   "slides": [
-    {{"heading": "Slayd sarlavhasi", "bullets": ["punkt 1", "punkt 2", "punkt 3"]}}
+    {{"type": "agenda", "heading": "Reja", "bullets": ["1-bo'lim", "2-bo'lim", "3-bo'lim"]}},
+    {{"type": "section", "heading": "1-BO'LIM NOMI"}},
+    {{"type": "content", "heading": "Slayd sarlavhasi",
+      "bullets": ["mazmunli punkt", "yana bir punkt", "uchinchi punkt"],
+      "takeaway": "Asosiy xulosa"}},
+    {{"type": "summary", "heading": "Xulosa", "bullets": ["asosiy fikr 1", "asosiy fikr 2"]}},
+    {{"type": "closing", "heading": "Rahmat!", "bullets": ["Savollar?"]}}
   ]
 }}
 """
+

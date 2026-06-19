@@ -17,16 +17,14 @@ AI_PROVIDER = _get("AI_PROVIDER", "gemini").lower()
 
 # Gemini
 GEMINI_API_KEY = _get("GEMINI_API_KEY")
-# Asosiy model. 2026-yil holatiga ko'ra ishlaydigan modellar:
-# gemini-2.5-flash, gemini-2.5-flash-lite, gemini-2.5-pro
-GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-2.5-flash")
+# Asosiy model. flash-lite — eng TEZ (chat uchun ideal). 2026 holatiga ko'ra ishlaydi.
+GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 # Zaxira modellar - asosiy ishlamasa, navbat bilan sinaladi.
-# Vergul bilan ajratilgan ro'yxat .env orqali ham berilishi mumkin.
 GEMINI_FALLBACK_MODELS = [
     m.strip()
     for m in _get(
         "GEMINI_FALLBACK_MODELS",
-        "gemini-2.5-flash-lite,gemini-flash-latest,gemini-2.5-pro",
+        "gemini-2.5-flash,gemini-flash-latest,gemini-2.5-pro",
     ).split(",")
     if m.strip()
 ]
@@ -46,6 +44,9 @@ ADMIN_USERNAME = _get("ADMIN_USERNAME", "ravshanovichch").lstrip("@").lower()
 ADMIN_ID = _get("ADMIN_ID")
 # Premium foydalanuvchilar saqlanadigan fayl
 PREMIUM_FILE = _get("PREMIUM_FILE", "premium_users.json")
+
+# --- Instagram (reklama / obuna) ---
+INSTAGRAM_HANDLE = _get("INSTAGRAM_HANDLE", "orinboyev_ai").lstrip("@")
 
 # --- Webhook (Render/Koyeb kabi bepul hostinglar uchun) ---
 # Ilovangizning ochiq URL manzili. Masalan: https://bilimai.onrender.com

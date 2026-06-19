@@ -48,14 +48,17 @@ TG_LIMIT = 4096
 ADMIN_USERNAME_PLAIN = config.ADMIN_USERNAME
 ADMIN_CONTACT = f"@{ADMIN_USERNAME_PLAIN}"
 ADMIN_LINK = f"https://t.me/{ADMIN_USERNAME_PLAIN}"
+INSTAGRAM_HANDLE = config.INSTAGRAM_HANDLE
+INSTAGRAM_LINK = f"https://instagram.com/{INSTAGRAM_HANDLE}"
 MD = constants.ParseMode.MARKDOWN
 
 # Telegram "Menu" tugmasi uchun buyruqlar ro'yxati
 COMMANDS = [
     BotCommand("start", "🏠 Bosh menyu"),
-    BotCommand("rasm", "🎨 Rasm yaratish (premium)"),
+    BotCommand("rasm", "🎨 Rasm yaratish (BEPUL)"),
     BotCommand("prezentatsiya", "📊 Prezentatsiya (premium)"),
-    BotCommand("obuna", "💎 Pullik obuna"),
+    BotCommand("superprez", "🌟 Super prezentatsiya (premium)"),
+    BotCommand("obuna", "💎 Premium tariflar"),
     BotCommand("id", "🆔 Mening ID raqamim"),
     BotCommand("help", "ℹ️ Yordam"),
 ]
@@ -102,17 +105,21 @@ def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("🎨 Rasm yaratish", callback_data="m:rasm"),
+                InlineKeyboardButton("🎨 Rasm yaratish (BEPUL)", callback_data="m:rasm"),
+            ],
+            [
                 InlineKeyboardButton("📊 Prezentatsiya", callback_data="m:ppt"),
+                InlineKeyboardButton("🌟 Super Prez", callback_data="m:superppt"),
             ],
             [
                 InlineKeyboardButton("📚 Savol berish", callback_data="m:savol"),
-                InlineKeyboardButton("💎 Obuna", callback_data="m:obuna"),
+                InlineKeyboardButton("💎 Premium", callback_data="m:obuna"),
             ],
             [
                 InlineKeyboardButton("🆔 Mening ID", callback_data="m:id"),
                 InlineKeyboardButton("ℹ️ Yordam", callback_data="m:help"),
             ],
+            [InlineKeyboardButton("📸 Instagram'ga obuna", url=INSTAGRAM_LINK)],
             [InlineKeyboardButton("👨‍💻 Admin bilan bog'lanish", url=ADMIN_LINK)],
         ]
     )
@@ -128,7 +135,8 @@ def back_kb() -> InlineKeyboardMarkup:
 def obuna_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("👨‍💻 Admin bilan bog'lanish", url=ADMIN_LINK)],
+            [InlineKeyboardButton("👨‍💻 Admin bilan bog'lanish (to'lov)", url=ADMIN_LINK)],
+            [InlineKeyboardButton("📸 Instagram'ga obuna", url=INSTAGRAM_LINK)],
             [InlineKeyboardButton("🏠 Bosh menyu", callback_data="m:home")],
         ]
     )
@@ -138,10 +146,11 @@ def obuna_kb() -> InlineKeyboardMarkup:
 
 def _premium_required_text() -> str:
     return (
-        "🔒 *Bu funksiya faqat pullik obuna uchun.*\n\n"
-        "🎨 Rasm yaratish va 📊 prezentatsiya tayyorlash — premium imkoniyatlar.\n\n"
-        f"📩 Obuna bo'lish uchun admin bilan bog'laning: {ADMIN_CONTACT}\n\n"
-        "Obuna bo'lgach, ID raqamingiz tizimga qo'shiladi va barcha funksiyalar "
+        "🔒 *Bu funksiya pullik (premium) tarif uchun.*\n\n"
+        "📊 Prezentatsiya va 🌟 Super Prezentatsiya — premium imkoniyatlar.\n"
+        "🎨 Rasm yaratish esa hamma uchun *BEPUL*!\n\n"
+        f"💳 To'lov va premium tariflar uchun admin bilan bog'laning: {ADMIN_CONTACT}\n\n"
+        "Obuna bo'lgach, ID raqamingiz tizimga qo'shiladi va premium funksiyalar "
         "ochiladi. (ID ni bilish uchun /id)"
     )
 
@@ -149,41 +158,46 @@ def _premium_required_text() -> str:
 def _help_text() -> str:
     return (
         "*ℹ️ BilimAI — yordam*\n\n"
-        "📚 *Bepul imkoniyatlar:*\n"
+        "🆓 *Bepul imkoniyatlar:*\n"
         "• Savolingizni shunchaki yozing — javob beraman\n"
         "• Masala *rasmini* yuboring — yechib beraman\n"
-        "  (Matematika, Fizika, Kimyo, Biologiya, Tarix, Ingliz tili, Dasturlash...)\n\n"
-        "💎 *Pullik obuna (premium):*\n"
-        "• `/rasm tavsif` — tavsif bo'yicha AI rasm chizadi\n"
-        "• `/prezentatsiya mavzu` — tayyor .pptx taqdimot\n\n"
+        "• `/rasm tavsif` — AI rasm chizadi (BEPUL!)\n\n"
+        "💎 *Premium (pullik) imkoniyatlar:*\n"
+        "• `/prezentatsiya mavzu` — professional .pptx taqdimot\n"
+        "• `/superprez mavzu` — kengaytirilgan SUPER taqdimot (16 slayd)\n\n"
         "🔘 *Buyruqlar:*\n"
         "/start — bosh menyu\n"
-        "/obuna — obuna haqida\n"
+        "/obuna — premium tariflar\n"
         "/id — Telegram ID raqamingiz\n"
         "/help — shu yordam\n\n"
-        f"💬 Pullik obuna uchun: {ADMIN_CONTACT}"
+        f"📸 Instagram: @{INSTAGRAM_HANDLE}\n"
+        f"💳 Premium uchun: {ADMIN_CONTACT}"
     )
 
 
 def _obuna_text(is_premium: bool) -> str:
     if is_premium:
         return (
-            "✅ *Sizda premium obuna FAOL!* 🎉\n\n"
+            "✅ *Sizda PREMIUM tarif FAOL!* 🎉\n\n"
             "Barcha funksiyalardan to'liq foydalanishingiz mumkin:\n"
-            "🎨 /rasm — rasm yaratish\n"
-            "📊 /prezentatsiya — taqdimot tayyorlash\n\n"
+            "🎨 /rasm — rasm yaratish (bepul)\n"
+            "📊 /prezentatsiya — professional taqdimot\n"
+            "🌟 /superprez — SUPER taqdimot (16 slayd)\n\n"
             "Rahmat! 💙"
         )
     return (
-        "💎 *PULLIK OBUNA (PREMIUM)*\n\n"
-        "Premium bilan quyidagilar ochiladi:\n\n"
-        "🎨 *Rasm yaratish*\n"
-        "   Istalgan tavsif bo'yicha AI rasm chizadi\n\n"
-        "📊 *Prezentatsiya*\n"
-        "   Mavzu bo'yicha tayyor .pptx taqdimot\n\n"
+        "💎 *PREMIUM TARIFLAR*\n\n"
+        "🆓 *BEPUL (hamma uchun):*\n"
+        "• Savol-javob (barcha fanlar)\n"
+        "• Rasmdagi masalani yechish\n"
+        "• 🎨 Rasm yaratish\n\n"
+        "💳 *PREMIUM (pullik):*\n"
+        "• 📊 *Prezentatsiya* — professional .pptx (10 slayd)\n"
+        "• 🌟 *Super Prezentatsiya* — kengaytirilgan, boy mazmunli (16 slayd)\n\n"
         "━━━━━━━━━━━━━━━\n"
-        f"📩 Obuna bo'lish uchun admin bilan bog'laning:\n{ADMIN_CONTACT}\n\n"
-        "Yozganda /id orqali olingan ID raqamingizni yuboring."
+        f"💳 To'lov qilish va tarifni faollashtirish uchun adminga yozing:\n{ADMIN_CONTACT}\n\n"
+        "Yozganda /id orqali olingan ID raqamingizni yuboring.\n\n"
+        f"📸 Yangiliklar: Instagram @{INSTAGRAM_HANDLE}"
     )
 
 
@@ -250,24 +264,26 @@ async def _do_image(update: Update, context: ContextTypes.DEFAULT_TYPE, prompt: 
             pass
 
 
-async def _do_ppt(update: Update, context: ContextTypes.DEFAULT_TYPE, topic: str):
+async def _do_ppt(update: Update, context: ContextTypes.DEFAULT_TYPE, topic: str,
+                  slides: int = 10, super_mode: bool = False):
     chat_id = update.effective_chat.id
     await context.bot.send_chat_action(
         chat_id=chat_id, action=constants.ChatAction.UPLOAD_DOCUMENT
     )
+    label = "🌟 Super prezentatsiya" if super_mode else "📊 Prezentatsiya"
     notice = await context.bot.send_message(
-        chat_id, "📊 Prezentatsiya tayyorlanmoqda… (15-40 soniya)"
+        chat_id, f"{label} tayyorlanmoqda… (20-50 soniya, biroz kuting)"
     )
     path = None
     try:
-        path = await _run(presentation.create_presentation, topic, 8)
+        path = await _run(presentation.create_presentation, topic, slides)
         safe = "".join(c for c in topic if c.isalnum() or c in " _-").strip()[:40]
         with open(path, "rb") as f:
             await context.bot.send_document(
                 chat_id,
                 document=f,
                 filename=f"{safe or 'prezentatsiya'}.pptx",
-                caption=f"📊 «{topic}» — tayyor!",
+                caption=f"{label}: «{topic}» — tayyor! ✅",
             )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Prezentatsiya xatosi")
@@ -287,11 +303,7 @@ async def _do_ppt(update: Update, context: ContextTypes.DEFAULT_TYPE, topic: str
 
 
 async def rasm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _is_premium(update):
-        await update.message.reply_text(
-            _premium_required_text(), parse_mode=MD, reply_markup=obuna_kb()
-        )
-        return
+    # Rasm yaratish HAMMA UCHUN BEPUL
     prompt = " ".join(context.args) if context.args else ""
     if not prompt:
         context.user_data["await"] = "rasm"
@@ -319,7 +331,26 @@ async def prezentatsiya(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             parse_mode=MD,
         )
         return
-    await _do_ppt(update, context, topic)
+    await _do_ppt(update, context, topic, slides=10)
+
+
+async def superprez(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _is_premium(update):
+        await update.message.reply_text(
+            _premium_required_text(), parse_mode=MD, reply_markup=obuna_kb()
+        )
+        return
+    topic = " ".join(context.args) if context.args else ""
+    if not topic:
+        context.user_data["await"] = "superppt"
+        await update.message.reply_text(
+            "🌟 *Super Prezentatsiya* — kengaytirilgan, boy mazmunli taqdimot (16 slayd).\n\n"
+            "Qaysi mavzuda kerak? Mavzuni yozing.\n"
+            "_Masalan: O'zbekiston tarixi_",
+            parse_mode=MD,
+        )
+        return
+    await _do_ppt(update, context, topic, slides=16, super_mode=True)
 
 
 # ----------------------- Tugmalar (callback) -----------------------
@@ -355,14 +386,9 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             reply_markup=back_kb(),
         )
     elif data == "m:rasm":
-        if not _is_premium(update):
-            await query.edit_message_text(
-                _premium_required_text(), parse_mode=MD, reply_markup=obuna_kb()
-            )
-            return
         context.user_data["await"] = "rasm"
         await query.edit_message_text(
-            "🎨 *Rasm yaratish*\n\nQanday rasm chizay? Tavsifini yozib yuboring.\n"
+            "🎨 *Rasm yaratish* (BEPUL)\n\nQanday rasm chizay? Tavsifini yozib yuboring.\n"
             "_Masalan: kosmosdagi mushuk, neon uslubida_",
             parse_mode=MD,
             reply_markup=back_kb(),
@@ -375,8 +401,22 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         context.user_data["await"] = "ppt"
         await query.edit_message_text(
-            "📊 *Prezentatsiya*\n\nQaysi mavzuda kerak? Mavzuni yozib yuboring.\n"
+            "📊 *Prezentatsiya* (premium)\n\nQaysi mavzuda kerak? Mavzuni yozib yuboring.\n"
             "_Masalan: Sun'iy intellekt nima?_",
+            parse_mode=MD,
+            reply_markup=back_kb(),
+        )
+    elif data == "m:superppt":
+        if not _is_premium(update):
+            await query.edit_message_text(
+                _premium_required_text(), parse_mode=MD, reply_markup=obuna_kb()
+            )
+            return
+        context.user_data["await"] = "superppt"
+        await query.edit_message_text(
+            "🌟 *Super Prezentatsiya* (premium)\n\nKengaytirilgan, boy mazmunli "
+            "taqdimot (16 slayd).\n\nQaysi mavzuda kerak? Mavzuni yozib yuboring.\n"
+            "_Masalan: O'zbekiston tarixi_",
             parse_mode=MD,
             reply_markup=back_kb(),
         )
@@ -459,7 +499,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await _do_image(update, context, text)
         return
     if waiting == "ppt":
-        await _do_ppt(update, context, text)
+        await _do_ppt(update, context, text, slides=10)
+        return
+    if waiting == "superppt":
+        await _do_ppt(update, context, text, slides=16, super_mode=True)
         return
 
     await context.bot.send_chat_action(
@@ -525,6 +568,7 @@ def build_application(token: str | None = None) -> Application:
     # Premium funksiyalar
     app.add_handler(CommandHandler(["rasm", "image"], rasm))
     app.add_handler(CommandHandler(["prezentatsiya", "ppt", "slayd"], prezentatsiya))
+    app.add_handler(CommandHandler(["superprez", "superprezentatsiya", "super"], superprez))
 
     # Admin
     app.add_handler(CommandHandler("addpremium", add_premium))
