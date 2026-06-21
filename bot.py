@@ -119,6 +119,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton("🆔 Mening ID", callback_data="m:id"),
                 InlineKeyboardButton("ℹ️ Yordam", callback_data="m:help"),
             ],
+            [InlineKeyboardButton("🌐 Bepul Oshnaqa Website", url="https://3000-itd3go7h80ar54clvhs38-c6f49f03.us3.manus.computer")],
             [InlineKeyboardButton("📸 Instagram'ga obuna", url=INSTAGRAM_LINK)],
             [InlineKeyboardButton("👨‍💻 Admin bilan bog'lanish", url=ADMIN_LINK)],
         ]
