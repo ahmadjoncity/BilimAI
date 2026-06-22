@@ -53,8 +53,16 @@ INSTAGRAM_HANDLE = _get("INSTAGRAM_HANDLE", "orinboyev_ai").lstrip("@")
 # Agar bo'sh bo'lsa, web server faqat web interfeys sifatida ishlaydi (bot webhooksiz).
 WEBHOOK_URL = _get("WEBHOOK_URL", "").rstrip("/")
 
+# --- Website URL (Bot menyu'da ko'rsatiladi) ---
+# BilimAI landing page URL
+WEBSITE_URL = _get("WEBSITE_URL", "https://3000-itd3go7h80ar54clvhs38-c6f49f03.us3.manus.computer")
+
 # Web server porti
 PORT = int(_get("PORT", "8000") or "8000")
+
+# --- Boshqa sozlamalar ---
+# Render deploy URL (Render'dan keyin yangilanadi)
+RENDER_URL = _get("RENDER_URL", "")
 
 
 def active_provider() -> str:
@@ -73,3 +81,10 @@ def active_provider() -> str:
 
 def is_configured() -> bool:
     return bool(active_provider())
+
+
+def get_website_url() -> str:
+    """Bot menyu'da ko'rsatiladi. Render URL'ni qaytaradi agar mavjud bo'lsa."""
+    if RENDER_URL:
+        return RENDER_URL
+    return WEBSITE_URL
