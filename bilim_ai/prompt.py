@@ -88,7 +88,8 @@ WELCOME_MESSAGE = (
     "   📊 Professional Prezentatsiya\n"
     "   🌟 Super Prezentatsiya (16 slayd)\n\n"
     "━━━━━━━━━━━━━━━\n"
-    "📸 Yangiliklar uchun Instagram'ga obuna bo'ling!\n"
+    "⚠️ *MUHIM:* Bot'dan foydalanish uchun Instagram'ga obuna bo'lishingiz majburiy!\n"
+    "📸 @orinboyev_ai'ga obuna bo'ling.\n\n"
     "👇 Tugmalardan tanlang yoki savolingizni yozing!"
 )
 

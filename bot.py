@@ -102,7 +102,6 @@ def _is_admin(update: Update) -> bool:
 
 def main_menu_kb() -> InlineKeyboardMarkup:
     """Bosh menyu — tugmalar."""
-    website_url = config.get_website_url()
     return InlineKeyboardMarkup(
         [
             [
@@ -120,7 +119,6 @@ def main_menu_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton("🆔 Mening ID", callback_data="m:id"),
                 InlineKeyboardButton("ℹ️ Yordam", callback_data="m:help"),
             ],
-            [InlineKeyboardButton("🌐 Bepul Oshnaqa Website", url=website_url)],
             [InlineKeyboardButton("📸 Instagram'ga obuna", url=INSTAGRAM_LINK)],
             [InlineKeyboardButton("👨‍💻 Admin bilan bog'lanish", url=ADMIN_LINK)],
         ]
